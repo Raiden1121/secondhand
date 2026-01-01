@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  email         String         @unique
+  password      String
+  name          String
+  avatar        String?
+  department    String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  products      Product[]
+  sentMessages  Message[]
+  notifications Notification[]
+  chats         Chat[]         @relation("UserChats")
+}
+
+model Product {
+  id          Int      @id @default(autoincrement())
+  title       String
+  price       Int
+  description String
+  images      String
+  category    String
+  status      String   @default("active")
+  sellerId    Int
+  seller      User     @relation(fields: [sellerId], references: [id])
+  location    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Chat {
+  id           Int       @id @default(autoincrement())
+  participants User[]    @relation("UserChats")
+  messages     Message[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  content   String
+  senderId  Int
+  sender    User     @relation(fields: [senderId], references: [id])
+  chatId    Int
+  chat      Chat     @relation(fields: [chatId], references: [id])
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  type      String
+  title     String
+  content   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
