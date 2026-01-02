@@ -1,6 +1,6 @@
 import prisma from '../lib/prisma.js';
 import jwt from 'jsonwebtoken';
-// import bcrypt from 'bcrypt'; 
+import bcrypt from 'bcrypt';
 
 export const register = async (req, res) => {
     try {
@@ -30,9 +30,8 @@ export const register = async (req, res) => {
             }
         }
 
-        // Hash password (mocking hash for now to match seed)
-        const hashedPassword = password;
-        // const hashedPassword = await bcrypt.hash(password, 10);
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
 
         const user = await prisma.user.create({
             data: {
@@ -48,7 +47,19 @@ export const register = async (req, res) => {
         });
 
         const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        res.status(201).json({ token, user: { id: user.id, name: user.name, email: user.email } });
+        res.status(201).json({
+            token,
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                studentId: user.studentId,
+                department: user.department,
+                phone: user.phone,
+                gender: user.gender,
+                avatar: user.avatar
+            }
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -62,12 +73,23 @@ export const login = async (req, res) => {
         if (!user) return res.status(400).json({ message: 'User not found' });
 
         // Check password
-        // const validPassword = await bcrypt.compare(password, user.password);
-        const validPassword = password === user.password; // Simple check for MVP/Seed data
+        const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) return res.status(400).json({ message: 'Invalid password' });
 
         const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '24h' });
-        res.json({ token, user: { id: user.id, name: user.name, email: user.email, department: user.department, avatar: user.avatar, studentId: user.studentId } });
+        res.json({
+            token,
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                department: user.department,
+                avatar: user.avatar,
+                studentId: user.studentId,
+                phone: user.phone,
+                gender: user.gender
+            }
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -77,9 +99,49 @@ export const getMe = async (req, res) => {
     try {
         const user = await prisma.user.findUnique({
             where: { id: req.user.id },
-            select: { id: true, name: true, email: true, department: true, avatar: true, studentId: true }
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                department: true,
+                avatar: true,
+                studentId: true,
+                phone: true,
+                gender: true
+            }
         });
         res.json(user);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const updateProfile = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { name, department, phone, gender } = req.body;
+
+        const updatedUser = await prisma.user.update({
+            where: { id: userId },
+            data: {
+                name,
+                department,
+                phone,
+                gender
+            },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                department: true,
+                avatar: true,
+                studentId: true,
+                phone: true,
+                gender: true
+            }
+        });
+
+        res.json(updatedUser);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

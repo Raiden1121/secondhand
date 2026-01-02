@@ -1,16 +1,34 @@
 import React from 'react';
 import { ArrowRight, BookOpen, Camera, MessageCircle, HandHeart } from 'lucide-react';
 import pineLan from '../assets/pineLan.png';
+import pineHand from '../assets/pineHand2Hand.png';
 
-const LandingPage = ({ onNavigateToLogin }) => {
+const LandingPage = ({ onNavigateToLogin, isAuthenticated, onNavigateToHome, onNavigateToPost }) => {
+
+    const handleStart = () => {
+        if (isAuthenticated) {
+            onNavigateToHome();
+        } else {
+            onNavigateToLogin();
+        }
+    };
+
+    const handleShare = () => {
+        if (isAuthenticated) {
+            onNavigateToPost();
+        } else {
+            onNavigateToLogin();
+        }
+    };
+
     return (
         <div className="bg-transparent bg-forest-50/30 text-pine-900 font-sans">
             {/* Hero Section */}
             <div className="max-w-7xl mx-auto px-6 py-12 md:py-20 flex flex-col md:flex-row items-center gap-12 md:gap-20">
                 <div className="flex-1 space-y-6 text-center md:text-left">
-                    <h1 className="text-4xl md:text-6xl font-light text-pine-900 leading-tight">
+                    <h1 className="text-4xl md:text-6xl font-semibold text-pine-900 leading-tight">
                         讓舊物<br />
-                        <span className="font-normal text-forest-700">延續</span> 新的故事
+                        <span className="font-bold text-forest-700">延續</span> 新的故事
                     </h1>
                     <p className="text-lg text-pine-600/80 leading-relaxed max-w-lg mx-auto md:mx-0">
                         中央大學專屬的二手物品交流平台。
@@ -27,13 +45,13 @@ const LandingPage = ({ onNavigateToLogin }) => {
                     </div>
                     <div className="pt-4 flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
                         <button
-                            onClick={onNavigateToLogin}
+                            onClick={handleStart}
                             className="px-8 py-4 bg-forest-600 text-white rounded-2xl font-medium hover:bg-forest-700 transition shadow-lg hover:shadow-xl hover:-translate-y-1 flex items-center justify-center gap-2"
                         >
                             開始尋寶 <ArrowRight size={20} />
                         </button>
                         <button
-                            onClick={onNavigateToLogin}
+                            onClick={handleShare}
                             className="px-8 py-4 bg-white text-pine-800 border-2 border-pine-100 rounded-2xl font-medium hover:bg-cream-50 transition flex items-center justify-center gap-2"
                         >
                             分享好物
@@ -121,7 +139,7 @@ const LandingPage = ({ onNavigateToLogin }) => {
                                 <div className="w-10 h-10 bg-cream-100 rounded-full flex items-center justify-center text-pine-600 flex-shrink-0 mt-1">3</div>
                                 <div>
                                     <h4 className="font-medium text-pine-800 mb-1 flex items-center gap-2">
-                                        <HandHeart size={18} /> 面交取貨
+                                        <HandHeart size={18} className="scale-x-[-1]" /> 面交取貨
                                     </h4>
                                     <p className="text-sm text-pine-600">約定好時間地點，在熟悉的校園角落完成交易。</p>
                                 </div>
@@ -158,7 +176,7 @@ const LandingPage = ({ onNavigateToLogin }) => {
                         </div>
                     </div>
                     <div className="flex-1 hidden md:block relative z-10">
-                        <img src="../src/assets/pineBack.png" alt="pineBack" />
+                        <img src="../src/assets/pineHand2Hand.png" alt="pineBack" />
                     </div>
                 </div>
             </div>

@@ -23,6 +23,9 @@ const PORT = process.env.PORT || 3000;
 import authRoutes from './routes/auth.js';
 import productRoutes from './routes/product.js';
 import chatRoutes from './routes/chat.js';
+import notificationRoutes from './routes/notification.js';
+import favoriteRoutes from './routes/favorite.js';
+import reportRoutes from './routes/report.js';
 
 // Fix for __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -36,7 +39,10 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
-app.use('/api/chats', chatRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/favorites', favoriteRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Socket.io Logic
 io.on('connection', (socket) => {

@@ -23,6 +23,8 @@ model User {
   sentMessages  Message[]
   notifications Notification[]
   chats         Chat[]         @relation("UserChats")
+  favorites     Favorite[]
+  reports       Report[]
 }
 
 model Product {
@@ -36,8 +38,11 @@ model Product {
   sellerId    Int
   seller      User     @relation(fields: [sellerId], references: [id])
   location    String?
+  condition   String   @default("全新")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  favorites   Favorite[]
+  reports     Report[]
 }
 
 model Chat {
@@ -50,7 +55,8 @@ model Chat {
 
 model Message {
   id        Int      @id @default(autoincrement())
-  content   String
+  content   String?
+  image     String?
   senderId  Int
   sender    User     @relation(fields: [senderId], references: [id])
   chatId    Int
@@ -67,5 +73,26 @@ model Notification {
   title     String
   content   String
   read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+}
+
+model Report {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  reason    String
   createdAt DateTime @default(now())
 }

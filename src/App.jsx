@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Navbar from './components/layout/Navbar';
 import MobileNav from './components/layout/MobileNav';
 import HomePage from './pages/HomePage';
@@ -9,29 +9,63 @@ import PostPage from './pages/PostPage';
 import ProfilePage from './pages/ProfilePage';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
-import { mockNotifications } from './data/mock';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('landing');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState(null); // 保存登入的使用者資料
-  const [notifications, setNotifications] = useState(mockNotifications);
+  const [user, setUser] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [chats, setChats] = useState([]);
 
-  // 模擬對話列表狀態
-  const [chats, setChats] = useState([
-    { id: 1, name: '資工系 王同學', unread: 2, lastMsg: '請問這個還有嗎？', time: '2小時前' },
-    { id: 2, name: '企管系 陳同學', unread: 1, lastMsg: '我想約明天面交', time: '5小時前' },
-    { id: 3, name: '數學系 林同學', unread: 0, lastMsg: '好的，謝謝！', time: '昨天' },
-  ]);
+  // Fetch notifications from API
+  const fetchNotifications = useCallback(async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await fetch('http://localhost:3000/api/notifications', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setNotifications(data);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  }, []);
+
+  // Fetch chats from API
+  const fetchChats = useCallback(async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await fetch('http://localhost:3000/api/chat', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setChats(data);
+      }
+    } catch (error) {
+      console.error('Error fetching chats:', error);
+    }
+  }, []);
+
+  // Fetch data when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchNotifications();
+      fetchChats();
+    }
+  }, [isAuthenticated, fetchNotifications, fetchChats]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
-  // 計算對話未讀總數 (不只是對話數，而是所有未讀訊息的總和，或者是有未讀對話的數量？通常 social app 顯示的是有未讀的對話數或是訊息總數。
-  // 根據使用者的描述 "對話未讀變成聊天室未讀的數量(人)" -> 應該是指有多少個聊天室有未讀訊息。)
-  // User request: "對話未讀變成聊天室未讀的數量(人)" -> Number of chats with unread messages.
   const chatUnreadCount = chats.filter(c => c.unread > 0).length;
 
   // Check for token in URL (OAuth callback) or localStorage on mount
-  React.useEffect(() => {
+  useEffect(() => {
     const checkAuth = async () => {
       let token = localStorage.getItem('token');
 
@@ -54,11 +88,19 @@ function App() {
 
           if (response.ok) {
             const userData = await response.json();
-            setUser(userData);
-            setIsAuthenticated(true);
-            setCurrentPage('home');
+            if (userData && userData.id) {
+              setUser(userData);
+              setIsAuthenticated(true);
+
+              if (!userData.name || !userData.department) {
+                setCurrentPage('profile');
+              } else {
+                setCurrentPage('landing');
+              }
+            } else {
+              localStorage.removeItem('token');
+            }
           } else {
-            // Token invalid
             localStorage.removeItem('token');
           }
         } catch (error) {
@@ -74,30 +116,70 @@ function App() {
   const handleLogin = (userData) => {
     setUser(userData);
     setIsAuthenticated(true);
-    setCurrentPage('home');
+
+    if (!userData.name || !userData.department) {
+      setCurrentPage('profile');
+    } else {
+      setCurrentPage('landing');
+    }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token'); // 清除 token
+    localStorage.removeItem('token');
     setUser(null);
     setIsAuthenticated(false);
-    setCurrentPage('landing'); // 回到 Landing 而非 Login
+    setNotifications([]);
+    setChats([]);
+    setCurrentPage('landing');
   };
 
-  const markAsRead = (id) => {
-    setNotifications(prev => prev.map(n =>
-      n.id === id ? { ...n, read: true } : n
-    ));
+  const markAsRead = async (id) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      await fetch(`http://localhost:3000/api/notifications/${id}/read`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setNotifications(prev => prev.map(n =>
+        n.id === id ? { ...n, read: true } : n
+      ));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  const markAllAsRead = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      await fetch('http://localhost:3000/api/notifications/read-all', {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
   };
 
-  const handleChatRead = (id) => {
-    setChats(prev => prev.map(c =>
-      c.id === id ? { ...c, unread: 0 } : c
-    ));
+  const handleChatRead = async (id) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      await fetch(`http://localhost:3000/api/chat/${id}/read`, {
+        method: 'PUT',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setChats(prev => prev.map(c =>
+        c.id === id ? { ...c, unread: 0 } : c
+      ));
+    } catch (error) {
+      console.error('Error marking chat as read:', error);
+    }
   };
 
   return (
@@ -113,8 +195,15 @@ function App() {
       />
 
       {/* 主要內容區 */}
-      <div className="max-w-6xl mx-auto pb-24 md:pb-8">
-        {currentPage === 'landing' && <LandingPage onNavigateToLogin={() => setCurrentPage('login')} />}
+      <div className={currentPage === 'chat' ? '' : 'max-w-6xl mx-auto pb-24 md:pb-8'}>
+        {currentPage === 'landing' && (
+          <LandingPage
+            onNavigateToLogin={() => setCurrentPage('login')}
+            isAuthenticated={isAuthenticated}
+            onNavigateToHome={() => setCurrentPage('home')}
+            onNavigateToPost={() => setCurrentPage('post')}
+          />
+        )}
         {currentPage === 'login' && <LoginPage onLogin={handleLogin} onBack={() => setCurrentPage('landing')} />}
         {currentPage === 'home' && <HomePage setCurrentPage={setCurrentPage} />}
         {currentPage === 'chat' && (
@@ -123,7 +212,7 @@ function App() {
             onChatRead={handleChatRead}
           />
         )}
-        {currentPage === 'post' && <PostPage />}
+        {currentPage === 'post' && <PostPage setCurrentPage={setCurrentPage} />}
         {currentPage === 'notifications' && (
           <NotificationPage
             notifications={notifications}
@@ -136,6 +225,7 @@ function App() {
           <ProductDetailPage
             productId={currentPage.split('-')[1]}
             setCurrentPage={setCurrentPage}
+            onChatCreated={fetchChats}
           />
         )}
       </div>

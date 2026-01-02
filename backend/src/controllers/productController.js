@@ -28,10 +28,16 @@ export const getProductById = async (req, res) => {
 
 export const createProduct = async (req, res) => {
     try {
-        const { title, price, description, category, images, status, location } = req.body;
+        const { title, price, description, category, status, location, condition } = req.body;
 
         // Simple validation
         if (!title || !price) return res.status(400).json({ message: 'Title and price are required' });
+
+        // Handle uploaded images from multer
+        let imagePaths = [];
+        if (req.files && req.files.length > 0) {
+            imagePaths = req.files.map(file => `/uploads/${file.filename}`);
+        }
 
         const product = await prisma.product.create({
             data: {
@@ -39,14 +45,16 @@ export const createProduct = async (req, res) => {
                 price: parseInt(price),
                 description,
                 category,
-                images: images || '[]',
+                images: JSON.stringify(imagePaths),
                 status: status || 'active',
                 location,
+                condition: condition || '全新',
                 sellerId: req.user.id // From auth middleware
             }
         });
         res.status(201).json(product);
     } catch (error) {
+        console.error('Error creating product:', error);
         res.status(500).json({ message: error.message });
     }
 };
@@ -66,7 +74,7 @@ export const getMyProducts = async (req, res) => {
 export const updateProduct = async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, price, description, category, images, status, location } = req.body;
+        const { title, price, description, category, status, location, condition, existingImages, imageOrder } = req.body;
 
         // Ensure product exists and belongs to user
         const existingProduct = await prisma.product.findUnique({
@@ -81,6 +89,61 @@ export const updateProduct = async (req, res) => {
             return res.status(403).json({ message: 'Unauthorized' });
         }
 
+        // Handle images
+        let finalImages = [];
+        let orderProcessed = false;
+
+        let newImagePaths = [];
+        if (req.files && req.files.length > 0) {
+            newImagePaths = req.files.map(file => `/uploads/${file.filename}`);
+        }
+
+        // 1. Try to use imageOrder for explicit ordering
+        if (imageOrder) {
+            try {
+                const order = JSON.parse(imageOrder);
+                if (Array.isArray(order)) {
+                    let newIdx = 0;
+                    finalImages = order.map(token => {
+                        if (typeof token === 'string' && token.startsWith('new-token-')) {
+                            return newImagePaths[newIdx++] || null;
+                        }
+                        return token;
+                    }).filter(Boolean);
+                    orderProcessed = true;
+                }
+            } catch (e) {
+                console.error('Error processing imageOrder:', e);
+            }
+        }
+
+        // 2. Fallback: Merge existing + new (if order logic failed or not provided)
+        if (!orderProcessed) {
+            // 1. Process existing images (from JSON string or array)
+            if (existingImages) {
+                try {
+                    const parsed = JSON.parse(existingImages);
+                    if (Array.isArray(parsed)) {
+                        finalImages = parsed;
+                    }
+                } catch (e) {
+                    console.error('Error parsing existing images:', e);
+                }
+            }
+
+            // 2. Add new uploaded images
+            if (req.files && req.files.length > 0) {
+                const newImagePaths = req.files.map(file => `/uploads/${file.filename}`);
+                finalImages = [...finalImages, ...newImagePaths];
+            }
+        }
+
+        // If no images provided at all (and no new files), maybe keep original? 
+        // Logic: if existingImages is sent (even empty), user intends to update images.
+        // If undefined, maybe we shouldn't touch images? 
+        // But FormData sends empty string for undefined fields usually?
+        // Let's assume if existingImages is present, we rely on it + req.files.
+
         const product = await prisma.product.update({
             where: { id: parseInt(id) },
             data: {
@@ -88,9 +151,10 @@ export const updateProduct = async (req, res) => {
                 price: parseInt(price),
                 description,
                 category,
-                images,
+                images: JSON.stringify(finalImages),
                 status,
-                location
+                location,
+                condition
             }
         });
 

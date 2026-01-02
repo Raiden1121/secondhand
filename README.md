@@ -11,10 +11,12 @@
 *   **Icons**: [Lucide React](https://lucide.dev/)
 *   **主要功能**:
     *   **NCU Portal OAuth 登入**: 整合校務系統單一登入。
-    *   **商品列表**: 瀏覽、搜尋二手商品（目前使用 Mock Data + 部分 API 整合中）。
-    *   **個人頁面 (Profile)**:
-        *   **帳號設定 (Account Settings)**: 採用 Split Modal UI 設計 (左側棕色吉祥物主題 + 右側編輯表單)，支援修改基本資料（系所、電話、性別等）。
-        *   **我的物品**: 管理自己上架的商品。
+    *   **商品列表**: 瀏覽、搜尋二手商品。
+    *   **商品詳情**: 查看商品資訊、賣家資料、聯絡賣家。
+    *   **收藏功能**: 加入/移除收藏商品。
+    *   **即時聊天**: 與賣家進行對話，支援圖片傳送。
+    *   **通知系統**: 接收系統通知並標記已讀。
+    *   **個人頁面**: 管理個人資料與上架商品。
     *   **響應式設計**: 支援手機與桌面版操作。
 
 ### 後端 (Backend)
@@ -22,15 +24,66 @@
 *   **框架**: [Express.js](https://expressjs.com/)
 *   **資料庫工具**: [Prisma ORM](https://www.prisma.io/)
 *   **認證**: JWT (JSON Web Token) + NCU Portal OAuth 2.0
-*   **主要功能**:
-    *   **Auth API**: `/api/auth/register`, `/api/auth/login`, `/api/auth/portal` (OAuth), `/api/auth/update` (更新個人資料，支援 bcrypt 密碼加密)。
-    *   **Product API**: 支援商品 CRUD (進行中)。
-    *   **資料保護**: 設定 `onDelete: Cascade`，當使用者刪除時，自動連動刪除其名下的商品、訊息與通知，確保資料庫完整性。
+*   **檔案上傳**: Multer (支援圖片上傳)
 
 ### 資料庫 (Database)
 *   **類型**: [PostgreSQL](https://www.postgresql.org/)
 *   **運行方式**: [Docker](https://www.docker.com/) (image: `postgres:15-alpine`)
 *   **資料保存**: 設定 Docker Volume (`pgdata`)，即使容器暫停或刪除，資料依然會保存。
+
+---
+
+## 📡 API 功能清單 (Backend Features)
+
+### 🔐 認證 (Auth)
+| 方法 | 路徑 | 說明 |
+|------|------|------|
+| POST | `/api/auth/register` | 用戶註冊 |
+| POST | `/api/auth/login` | 用戶登入 |
+| GET | `/api/auth/me` | 取得當前用戶資訊 |
+| PUT | `/api/auth/update` | 更新個人資料 |
+| GET | `/api/auth/portal` | NCU Portal OAuth 登入 |
+| GET | `/api/auth/portal/callback` | OAuth 回調處理 |
+
+### 📦 商品 (Product)
+| 方法 | 路徑 | 說明 |
+|------|------|------|
+| GET | `/api/products` | 取得所有商品 |
+| GET | `/api/products/:id` | 取得單一商品詳情 |
+| POST | `/api/products` | 上架新商品 (需登入) |
+| GET | `/api/products/my` | 取得我的商品 (需登入) |
+| PUT | `/api/products/:id` | 更新商品 (需登入) |
+| DELETE | `/api/products/:id` | 刪除商品 (需登入) |
+
+### 💬 聊天 (Chat)
+| 方法 | 路徑 | 說明 |
+|------|------|------|
+| GET | `/api/chat` | 取得對話列表 |
+| GET | `/api/chat/:chatId/messages` | 取得對話訊息 |
+| POST | `/api/chat/initiate` | 開始新對話 |
+| POST | `/api/chat/:chatId/messages` | 發送訊息 (支援圖片) |
+| PUT | `/api/chat/:chatId/read` | 標記對話已讀 |
+
+### ❤️ 收藏 (Favorite)
+| 方法 | 路徑 | 說明 |
+|------|------|------|
+| GET | `/api/favorites` | 取得我的收藏 |
+| POST | `/api/favorites/:productId` | 加入收藏 |
+| DELETE | `/api/favorites/:productId` | 移除收藏 |
+| GET | `/api/favorites/:productId/check` | 檢查是否已收藏 |
+
+### 🔔 通知 (Notification)
+| 方法 | 路徑 | 說明 |
+|------|------|------|
+| GET | `/api/notifications` | 取得所有通知 |
+| PUT | `/api/notifications/:id/read` | 標記單則已讀 |
+| PUT | `/api/notifications/read-all` | 標記全部已讀 |
+
+### 🚨 檢舉 (Report)
+| 方法 | 路徑 | 說明 |
+|------|------|------|
+| POST | `/api/reports` | 檢舉商品 |
+| GET | `/api/reports` | 取得所有檢舉 (管理員) |
 
 ---
 
@@ -56,9 +109,9 @@ npx prisma db push
 cd backend
 npx prisma studio
 ```
-瀏覽器打開 `http://localhost:5555` 即可：
-*   查看所有 Users, Products
-*   手動新增/刪除資料 (已支援 Cascade Delete，刪除 User 會一併清除關聯資料)
+瀏覽器打開 `http://localhost:5555` (預設)即可：
+*   查看所有 Users, Products, Chats, Messages 等
+*   手動新增/刪除資料 (已支援 Cascade Delete)
 
 ### 3. 啟動後端伺服器 (Backend Server)
 ```bash
@@ -79,8 +132,49 @@ npm run dev
 ---
 
 ## 📝 開發進度筆記
-*   [x] 整合 NCU Portal OAuth
-*   [x] 完備使用者註冊與登入流程 (含密碼加密)
-*   [x] 優化帳號設定 UI (Split Modal + Brown Theme)
-*   [x] 解決 User 刪除時的外鍵約束問題 (Foreign Key Constraints)
-*   [ ] 完善商品上架與編輯功能的 API 串接
+
+### ✅ 已完成功能
+- [x] NCU Portal OAuth 整合
+- [x] 用戶註冊/登入系統 (含密碼加密)
+- [x] 商品 CRUD (上架、編輯、刪除)
+- [x] 商品圖片上傳 (多圖支援)
+- [x] 商品收藏功能
+- [x] 即時聊天系統
+- [x] 聊天圖片傳送
+- [x] 通知系統
+- [x] 商品檢舉功能
+- [x] 個人資料編輯
+- [x] 響應式設計 (RWD)
+
+### 🚧 進行中 / 待開發
+- [ ] 商品搜尋與篩選功能
+- [ ] 管理員後台
+- [ ] 交易狀態追蹤
+- [ ] 推播通知
+
+---
+
+## 📁 專案結構
+
+```
+secondhand/
+├── src/                    # 前端原始碼
+│   ├── components/         # React 元件
+│   ├── pages/              # 頁面元件
+│   └── assets/             # 靜態資源
+├── backend/
+│   ├── src/
+│   │   ├── controllers/    # API 控制器
+│   │   ├── routes/         # 路由定義
+│   │   ├── middleware/     # 中間件 (auth, upload)
+│   │   └── lib/            # Prisma client
+│   ├── prisma/             # 資料庫 Schema
+│   └── uploads/            # 上傳的檔案
+└── README.md
+```
+
+---
+
+## 📄 License
+
+MIT License

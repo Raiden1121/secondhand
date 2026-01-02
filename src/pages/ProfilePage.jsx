@@ -1,8 +1,58 @@
-import React, { useState } from 'react';
-import { Star, Package, Plus, X, User, Mail, IdCard, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Star, Package, Plus, X, User, Mail, IdCard, ArrowRight, AlertTriangle, Heart } from 'lucide-react';
 import { categories } from '../data/mock';
 import pineLan from '../assets/pineLan.png';
 import pineLogo from '../assets/pineLogo.png';
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+} from '@dnd-kit/core';
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    useSortable,
+    rectSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+const SortablePhoto = ({ id, url, index, onRemove }) => {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+    } = useSortable({ id: id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+    };
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            {...attributes}
+            {...listeners}
+            className="relative aspect-square rounded-xl overflow-hidden border border-pine-200 bg-cream-50 touch-none group"
+        >
+            <img src={url} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
+            <button
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={() => onRemove(id)}
+                className="absolute top-1 right-1 w-6 h-6 bg-black/50 text-white rounded-full flex items-center justify-center hover:bg-black/70 transition opacity-0 group-hover:opacity-100"
+            >
+                <X size={14} />
+            </button>
+        </div>
+    );
+};
 
 const ProfilePage = ({ user, onLogout }) => {
     const [editingProduct, setEditingProduct] = useState(null);
@@ -14,18 +64,146 @@ const ProfilePage = ({ user, onLogout }) => {
         description: ''
     });
 
-    // 模擬的商品資料（之後從 API 取得）
-    const [products, setProducts] = useState([
-        { id: 1, title: 'iPhone 13 Pro', price: 18000, category: '3C', condition: '二手', description: '九成新', image: '📱' },
-        { id: 2, title: 'iPhone 13 Pro', price: 18000, category: '3C', condition: '二手', description: '九成新', image: '📱' },
-    ]);
+    const [products, setProducts] = useState([]);
+    const [favorites, setFavorites] = useState([]);
+    const [imageList, setImageList] = useState([]);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        }),
+        useSensor(KeyboardSensor, {
+            coordinateGetter: sortableKeyboardCoordinates,
+        })
+    );
+
+    useEffect(() => {
+        const fetchMyProducts = async () => {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            try {
+                const response = await fetch('http://localhost:3000/api/products/my', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setProducts(data);
+                }
+            } catch (error) {
+                console.error('Error fetching my products:', error);
+            }
+        };
+
+        const fetchFavorites = async () => {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            try {
+                const response = await fetch('http://localhost:3000/api/favorites', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setFavorites(data);
+                }
+            } catch (error) {
+                console.error('Error fetching favorites:', error);
+            }
+        };
+
+        fetchMyProducts();
+        fetchFavorites();
+    }, []);
+
+    const getProductImage = (product) => {
+        let images = product.images;
+        if (typeof images === 'string') {
+            try { images = JSON.parse(images); } catch { images = []; }
+        }
+
+        if (images && images.length > 0) {
+            return (
+                <img
+                    src={`http://localhost:3000${images[0]}`}
+                    alt={product.title}
+                    className="w-full h-full object-cover rounded-xl"
+                />
+            );
+        }
+        return '📦';
+    };
+
+    const handleImageSelect = (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        if (imageList.length + files.length > 5) {
+            alert('最多只能上傳 5 張照片');
+            return;
+        }
+
+        const newItems = files.map(file => {
+            const url = URL.createObjectURL(file);
+            return {
+                id: url,
+                type: 'new',
+                url: url,
+                file: file
+            };
+        });
+
+        setImageList(prev => [...prev, ...newItems]);
+        e.target.value = '';
+    };
+
+    const removeImage = (id) => {
+        const item = imageList.find(i => i.id === id);
+        if (item && item.type === 'new') {
+            URL.revokeObjectURL(item.url);
+        }
+        setImageList(prev => prev.filter(i => i.id !== id));
+    };
+
+    const handleDragEnd = (event) => {
+        const { active, over } = event;
+        if (active.id !== over.id) {
+            setImageList((items) => {
+                const oldIndex = items.findIndex(i => i.id === active.id);
+                const newIndex = items.findIndex(i => i.id === over.id);
+                return arrayMove(items, oldIndex, newIndex);
+            });
+        }
+    };
 
     const handleEdit = (product) => {
+        let initialImages = [];
+        try {
+            if (typeof product.images === 'string') {
+                initialImages = JSON.parse(product.images);
+            } else if (Array.isArray(product.images)) {
+                initialImages = product.images;
+            }
+        } catch (e) {
+            initialImages = [];
+        }
+
+        const formattedImages = initialImages.map(url => ({
+            id: url,
+            type: 'existing',
+            url: `http://localhost:3000${url}`,
+            serverPath: url
+        }));
+        setImageList(formattedImages);
+
         setFormData({
             title: product.title,
             category: product.category,
             price: product.price,
-            condition: product.condition,
+            condition: product.condition || '全新',
             description: product.description
         });
         setEditingProduct(product);
@@ -33,17 +211,138 @@ const ProfilePage = ({ user, onLogout }) => {
 
     const handleClose = () => {
         setEditingProduct(null);
+        imageList.forEach(item => {
+            if (item.type === 'new') URL.revokeObjectURL(item.url);
+        });
+        setImageList([]);
+        setShowDeleteConfirm(false);
     };
 
-    const handleSave = () => {
-        // 更新商品資料
-        setProducts(prev => prev.map(p =>
-            p.id === editingProduct.id
-                ? { ...p, ...formData }
-                : p
-        ));
-        setEditingProduct(null);
-        // TODO: 呼叫 API 更新
+    const handleSave = async () => {
+        // Simple validation
+        if (!formData.title || !formData.price || !formData.description) {
+            alert('請填寫完整資訊');
+            return;
+        }
+
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        try {
+            // Prepare FormData for file upload
+            // Note: Since we need to handle updates with images properly, the backend needs to support it.
+            // Currently backend updateProduct supports images array (paths). 
+            // BUT here we have mixed existing (paths) and new (files).
+            // This is tricky because backend update expects JSON body typically unless strictly multipart.
+            // The route middleware is upload.array('images', 5).
+            // So we should send FormData.
+
+            // Existing images are paths. We should send them as text field? 
+            // The backend updateProduct logic replaces images: 
+            /*
+             const { images } = req.body; // text field
+             let imagePaths = [];
+             if (req.files) ... add new paths
+             // But we need to keep existing ones too.
+             // We need backend to merge or we merge on frontend?
+             // Since existingImages are string paths, we can send them.
+            */
+
+            // Wait, backend logic for update is simple replacement:
+            /*
+             images,
+            */
+
+            // If we use FormData, fields are strings.
+            // New files are in req.files.
+
+            // We need to modify backend logic to merge or handle this properly?
+            // Let's implement frontend first properly for FormData.
+
+            /*
+              Strategy:
+              1. Send existingImages as a JSON string in 'existingImages' field? Or just 'images'?
+              2. Backend logic needs to check if images is provided.
+            */
+
+            // Let's check backend controller logic for update first.
+            // It just updates with `images` from req.body.
+            // But if we upload files, `images` in req.body might be overridden or empty?
+            // Actually with multer, req.body has text fields.
+
+            // Let's construct FormData
+            const submitData = new FormData();
+            submitData.append('title', formData.title);
+            submitData.append('category', formData.category);
+            submitData.append('price', parseInt(formData.price));
+            submitData.append('condition', formData.condition);
+            submitData.append('description', formData.description);
+            submitData.append('location', editingProduct.location || ''); // Preserve location or add editable field later
+            submitData.append('status', editingProduct.status);
+
+            // Handle Images (Unified List)
+            const finalExistingImages = imageList
+                .filter(item => item.type === 'existing')
+                .map(item => item.serverPath);
+            submitData.append('existingImages', JSON.stringify(finalExistingImages));
+
+            let newFileIndex = 0;
+            const imageOrder = imageList.map(item => {
+                if (item.type === 'existing') return item.serverPath;
+                return `new-token-${newFileIndex++}`;
+            });
+            submitData.append('imageOrder', JSON.stringify(imageOrder));
+
+            imageList.forEach(item => {
+                if (item.type === 'new' && item.file) {
+                    submitData.append('images', item.file);
+                }
+            });
+
+            // Append existing images as a JSON string or individual fields?
+            // Prisma expects 'images' to be a JSON string of paths.
+            // If we send `images` as string of existing paths, multer won't touch it.
+            // But we also have NEW files.
+
+            // We need to modify Backend to merge. 
+            // Let's assume for now we send existing paths as 'existingImages' and let backend handle it?
+            // Or easier: we send 'images' as the JSON string of existing ones.
+            // And 'newImages' as files? 
+            // But Multer expects 'images' for files based on route config: `upload.array('images', 5)`
+
+            // So files MUST be in 'images' field.
+            // The existing image paths must be in a different field, say 'existingImages'.
+
+            // Removed legacy existingImages
+
+            // Removed legacy newImages
+
+            const response = await fetch(`http://localhost:3000/api/products/${editingProduct.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                    // No Content-Type header for FormData, browser sets it with boundary
+                },
+                body: submitData
+            });
+
+            if (response.ok) {
+                const updatedProduct = await response.json();
+
+                // Update local state
+                setProducts(prev => prev.map(p =>
+                    p.id === editingProduct.id ? updatedProduct : p
+                ));
+                handleClose();
+            } else {
+                const err = await response.json();
+                alert(err.message || '更新失敗');
+            }
+
+        } catch (error) {
+            console.error('Error updating product:', error);
+            alert('系統錯誤，請稍後再試');
+        }
     };
 
     // Profile Editing State
@@ -70,7 +369,22 @@ const ProfilePage = ({ user, onLogout }) => {
         setIsEditingProfile(true);
     };
 
+    // Check for mandatory fields on mount
+    React.useEffect(() => {
+        if (user) {
+            if (!user.name || !user.department) {
+                // Auto-open modal if fields are missing
+                handleEditProfile();
+            }
+        }
+    }, [user]);
+
     const handleSaveProfile = async () => {
+        // Validation handled by button state, but double check here
+        if (!profileFormData.name || !profileFormData.department) {
+            return;
+        }
+
         try {
             const token = localStorage.getItem('token');
             const response = await fetch('http://localhost:3000/api/auth/update', {
@@ -101,10 +415,32 @@ const ProfilePage = ({ user, onLogout }) => {
     };
 
     const handleDelete = () => {
-        if (window.confirm('確定要刪除這個商品嗎？')) {
-            setProducts(prev => prev.filter(p => p.id !== editingProduct.id));
-            setEditingProduct(null);
-            // TODO: 呼叫 API 刪除
+        setShowDeleteConfirm(true);
+    };
+
+    const confirmDelete = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        try {
+            const response = await fetch(`http://localhost:3000/api/products/${editingProduct.id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                setProducts(prev => prev.filter(p => p.id !== editingProduct.id));
+                setEditingProduct(null);
+                setShowDeleteConfirm(false);
+            } else {
+                const err = await response.json();
+                alert(err.message || '刪除失敗');
+            }
+        } catch (error) {
+            console.error('Error deleting product:', error);
+            alert('系統錯誤，請稍後再試');
         }
     };
 
@@ -134,23 +470,54 @@ const ProfilePage = ({ user, onLogout }) => {
                     我的物品
                 </h3>
                 <div className="space-y-3">
-                    {products.map(product => (
-                        <div key={product.id} className="flex items-center gap-4 p-4 border border-pine-100 rounded-xl hover:bg-cream-50 transition cursor-pointer">
-                            <div className="w-16 h-16 bg-cream-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 text-pine-600">
-                                {product.image}
+                    {products.length === 0 ? (
+                        <p className="text-center text-pine-400 py-4 text-sm">目前沒有上架的物品</p>
+                    ) : (
+                        products.map(product => (
+                            <div key={product.id} className="flex items-center gap-4 p-4 border border-pine-100 rounded-xl hover:bg-cream-50 transition cursor-pointer">
+                                <div className="w-16 h-16 bg-cream-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 text-pine-600 overflow-hidden">
+                                    {getProductImage(product)}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="font-medium text-pine-900 truncate">{product.title}</h4>
+                                    <p className="text-sm text-pine-500 mt-1">NT$ {product.price?.toLocaleString()}</p>
+                                </div>
+                                <button
+                                    onClick={() => handleEdit(product)}
+                                    className="text-sm text-pine-600 hover:text-pine-800 flex-shrink-0 hover:underline"
+                                >
+                                    編輯
+                                </button>
                             </div>
-                            <div className="flex-1 min-w-0">
-                                <h4 className="font-medium text-pine-900 truncate">{product.title}</h4>
-                                <p className="text-sm text-pine-500 mt-1">NT$ {product.price.toLocaleString()}</p>
+                        )))}
+                </div>
+            </div>
+
+            {/* My Favorites Section */}
+            <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 md:p-8 border border-pine-50 shadow-sm">
+                <h3 className="font-medium text-pine-900 mb-4 flex items-center gap-2">
+                    <Heart size={18} className="text-red-400" />
+                    我的收藏
+                </h3>
+                <div className="space-y-3">
+                    {favorites.length === 0 ? (
+                        <p className="text-center text-pine-400 py-4 text-sm">還沒有收藏任何物品</p>
+                    ) : (
+                        favorites.map(product => (
+                            <div key={product.id} className="flex items-center gap-4 p-4 border border-pine-100 rounded-xl hover:bg-cream-50 transition cursor-pointer">
+                                <div className="w-16 h-16 bg-cream-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 text-pine-600 overflow-hidden">
+                                    {getProductImage(product)}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="font-medium text-pine-900 truncate">{product.title}</h4>
+                                    <p className="text-sm text-pine-500 mt-1">NT$ {product.price?.toLocaleString()}</p>
+                                </div>
+                                <span className="text-xs text-pine-400">
+                                    {product.seller?.name}
+                                </span>
                             </div>
-                            <button
-                                onClick={() => handleEdit(product)}
-                                className="text-sm text-pine-600 hover:text-pine-800 flex-shrink-0 hover:underline"
-                            >
-                                編輯
-                            </button>
-                        </div>
-                    ))}
+                        ))
+                    )}
                 </div>
             </div>
 
@@ -189,10 +556,46 @@ const ProfilePage = ({ user, onLogout }) => {
                         <div className="p-6 space-y-6">
                             <div>
                                 <label className="block text-sm font-medium text-pine-600 mb-3">照片</label>
-                                <div className="border-2 border-dashed border-pine-200 rounded-2xl p-12 text-center hover:bg-cream-50 cursor-pointer transition group">
-                                    <Plus size={40} className="mx-auto text-pine-300 group-hover:text-pine-500 transition" />
-                                    <p className="text-pine-400 mt-3 text-sm group-hover:text-pine-600">上傳物品照片</p>
-                                </div>
+                                <input
+                                    type="file"
+                                    id="edit-image-upload"
+                                    onChange={handleImageSelect}
+                                    accept="image/*"
+                                    multiple
+                                    className="hidden"
+                                />
+                                <DndContext
+                                    sensors={sensors}
+                                    collisionDetection={closestCenter}
+                                    onDragEnd={handleDragEnd}
+                                >
+                                    <SortableContext items={imageList.map(i => i.id)} strategy={rectSortingStrategy}>
+                                        <div className="grid grid-cols-3 gap-3">
+                                            {imageList.map((img, index) => (
+                                                <SortablePhoto
+                                                    key={img.id}
+                                                    id={img.id}
+                                                    url={img.url}
+                                                    index={index}
+                                                    onRemove={removeImage}
+                                                />
+                                            ))}
+
+                                            {/* Upload Button */}
+                                            {imageList.length < 5 && (
+                                                <label
+                                                    htmlFor="edit-image-upload"
+                                                    className="aspect-square border-2 border-dashed border-pine-200 rounded-xl flex flex-col items-center justify-center hover:bg-cream-50 cursor-pointer transition group"
+                                                >
+                                                    <Plus size={24} className="text-pine-300 group-hover:text-pine-500 transition" />
+                                                    <p className="text-pine-400 mt-1 text-xs group-hover:text-pine-600">
+                                                        {imageList.length === 0 ? '上傳照片' : '新增'}
+                                                    </p>
+                                                </label>
+                                            )}
+                                        </div>
+                                    </SortableContext>
+                                </DndContext>
                             </div>
 
                             <div>
@@ -319,15 +722,28 @@ const ProfilePage = ({ user, onLogout }) => {
 
                             <div className="p-8 md:p-10 space-y-6">
 
+                                {/* Warning Banner for Missing Fields */}
+                                {(!user?.name || !user?.department) && (
+                                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3 items-start animate-fadeIn">
+                                        <AlertTriangle className="text-amber-600 flex-shrink-0 mt-0.5" size={20} />
+                                        <div>
+                                            <h4 className="font-semibold text-amber-900 text-sm mb-1">請完善個人資料</h4>
+                                            <p className="text-sm text-amber-800/80 leading-relaxed">
+                                                為了讓系統能根據您的「系所」進行準確的商品篩選與配對，請務必填寫姓名與系所資訊。
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Name Field */}
                                 <div className="group">
                                     <label className="flex items-center gap-2 text-sm font-semibold text-[#5C4033] mb-2">
                                         <User size={18} className="text-[#8B5A2B]" />
-                                        姓名
+                                        姓名 <span className="text-red-500">*</span>
                                     </label>
                                     <input
                                         type="text"
-                                        className="w-full px-4 py-3 border border-stone-200 rounded-xl text-stone-800 bg-white focus:outline-none focus:border-[#8B5A2B] focus:ring-4 focus:ring-[#8B5A2B]/10 transition-all duration-200 placeholder:text-stone-300"
+                                        className={`w-full px-4 py-3 border rounded-xl text-stone-800 bg-white focus:outline-none focus:ring-4 transition-all duration-200 ${!profileFormData.name ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10' : 'border-stone-200 focus:border-[#8B5A2B] focus:ring-[#8B5A2B]/10'}`}
                                         placeholder="請輸入您的姓名"
                                         value={profileFormData.name}
                                         onChange={(e) => setProfileFormData({ ...profileFormData, name: e.target.value })}
@@ -364,10 +780,12 @@ const ProfilePage = ({ user, onLogout }) => {
 
                                 {/* Department Field */}
                                 <div>
-                                    <label className="block text-sm font-semibold text-[#5C4033] mb-2">系所</label>
+                                    <label className="block text-sm font-semibold text-[#5C4033] mb-2">
+                                        系所 <span className="text-red-500">*</span>
+                                    </label>
                                     <div className="relative">
                                         <select
-                                            className="w-full px-4 py-3 border border-stone-200 rounded-xl text-stone-800 bg-white focus:outline-none focus:border-[#8B5A2B] focus:ring-4 focus:ring-[#8B5A2B]/10 transition-all duration-200 cursor-pointer hover:border-[#8B5A2B]/50 appearance-none"
+                                            className={`w-full px-4 py-3 border rounded-xl text-stone-800 bg-white focus:outline-none focus:ring-4 transition-all duration-200 cursor-pointer appearance-none ${!profileFormData.department ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10' : 'border-stone-200 focus:border-[#8B5A2B] hover:border-[#8B5A2B]/50 focus:ring-[#8B5A2B]/10'}`}
                                             value={profileFormData.department || ''}
                                             onChange={(e) => setProfileFormData({ ...profileFormData, department: e.target.value })}
                                         >
@@ -423,13 +841,46 @@ const ProfilePage = ({ user, onLogout }) => {
                                 <div className="pt-2">
                                     <button
                                         onClick={handleSaveProfile}
-                                        className="w-full bg-[#5C4033] text-white py-4 rounded-xl font-medium tracking-wide hover:bg-[#4A332A] hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 shadow-md flex items-center justify-center gap-2 group"
+                                        disabled={!profileFormData.name || !profileFormData.department}
+                                        className={`w-full py-4 rounded-xl font-medium tracking-wide shadow-md flex items-center justify-center gap-2 group transition-all duration-200
+                                            ${!profileFormData.name || !profileFormData.department
+                                                ? 'bg-stone-300 text-stone-500 cursor-not-allowed'
+                                                : 'bg-[#5C4033] text-white hover:bg-[#4A332A] hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0'}`}
                                     >
                                         <span>儲存變更</span>
-                                        <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                                        {(!profileFormData.name || !profileFormData.department) ? null : <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />}
                                     </button>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteConfirm && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl space-y-4">
+                        <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto text-red-500">
+                            <AlertTriangle size={24} />
+                        </div>
+                        <div className="text-center">
+                            <h3 className="text-lg font-medium text-pine-900">確定要刪除嗎？</h3>
+                            <p className="text-sm text-pine-500 mt-2">此動作無法復原，商品將會被永久移除。</p>
+                        </div>
+                        <div className="flex gap-3 mt-4">
+                            <button
+                                onClick={() => setShowDeleteConfirm(false)}
+                                className="flex-1 py-3 px-4 rounded-xl border border-pine-200 text-pine-600 hover:bg-cream-50 transition"
+                            >
+                                考慮一下
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                className="flex-1 py-3 px-4 rounded-xl bg-red-500 text-white hover:bg-red-600 transition shadow-md"
+                            >
+                                確認刪除
+                            </button>
                         </div>
                     </div>
                 </div>

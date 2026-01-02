@@ -1,16 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import ProductCard from '../components/products/ProductCard';
-import { mockProducts, categories, departments } from '../data/mock';
+import { categories, departments } from '../data/mock';
 
 const HomePage = ({ setCurrentPage }) => {
+    const [products, setProducts] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [selectedCategory, setSelectedCategory] = useState('全部');
     const [selectedDept, setSelectedDept] = useState('全部系所');
     const [searchQuery, setSearchQuery] = useState('');
 
-    const filteredProducts = mockProducts.filter(product => {
+    // Fetch products from API
+    useEffect(() => {
+        const fetchProducts = async () => {
+            try {
+                const response = await fetch('http://localhost:3000/api/products');
+                if (response.ok) {
+                    const data = await response.json();
+                    setProducts(data);
+                }
+            } catch (error) {
+                console.error('Error fetching products:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchProducts();
+    }, []);
+
+    const filteredProducts = products.filter(product => {
         const matchCategory = selectedCategory === '全部' || product.category === selectedCategory;
-        const matchDept = selectedDept === '全部系所' || product.dept === selectedDept;
+        const matchDept = selectedDept === '全部系所' || product.seller?.department === selectedDept;
         const matchSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase());
         return matchCategory && matchDept && matchSearch;
     });
@@ -46,8 +66,8 @@ const HomePage = ({ setCurrentPage }) => {
                             key={cat}
                             onClick={() => setSelectedCategory(cat)}
                             className={`px-4 py-2 rounded-full text-sm transition ${selectedCategory === cat
-                                    ? 'bg-pine-800 text-white shadow-md'
-                                    : 'bg-cream-100 text-pine-600 hover:bg-cream-200 hover:text-pine-800'
+                                ? 'bg-pine-800 text-white shadow-md'
+                                : 'bg-cream-100 text-pine-600 hover:bg-cream-200 hover:text-pine-800'
                                 }`}
                         >
                             {cat}
@@ -72,13 +92,19 @@ const HomePage = ({ setCurrentPage }) => {
 
             {/* 商品列表 */}
             <div className="px-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-4">
-                {filteredProducts.map(product => (
-                    <ProductCard
-                        key={product.id}
-                        product={product}
-                        onClick={() => setCurrentPage('product-' + product.id)}
-                    />
-                ))}
+                {loading ? (
+                    <div className="col-span-full text-center py-10 text-pine-400">載入中...</div>
+                ) : filteredProducts.length === 0 ? (
+                    <div className="col-span-full text-center py-10 text-pine-400">目前沒有商品</div>
+                ) : (
+                    filteredProducts.map(product => (
+                        <ProductCard
+                            key={product.id}
+                            product={product}
+                            onClick={() => setCurrentPage('product-' + product.id)}
+                        />
+                    ))
+                )}
             </div>
         </div>
     );
