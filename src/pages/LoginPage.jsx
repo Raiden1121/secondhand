@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Eye, EyeOff, Lock, User, Mail, ArrowRight, IdCard } from 'lucide-react';
 import pineLan from '../assets/pineLan.png';
 
-const LoginPage = ({ onLogin }) => {
+const LoginPage = ({ onLogin, onBack }) => {
     const [activeTab, setActiveTab] = useState('external'); // 'external' or 'password'
     const [showPassword, setShowPassword] = useState(false);
     const [isRegistering, setIsRegistering] = useState(false); // Toggle between Login and Register form
@@ -13,18 +13,58 @@ const LoginPage = ({ onLogin }) => {
         password: '',
         name: '',
         studentId: '',
-        department: ''
+        department: '',
+        phone: '',
+        gender: ''
     });
+
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const handleInputChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Here you would typically call an API to login/register
-        // For MVP/Demo, we just call onLogin()
-        onLogin();
+        setError('');
+        setLoading(true);
+
+        try {
+            const endpoint = isRegistering ? '/api/auth/register' : '/api/auth/login';
+            const body = isRegistering
+                ? {
+                    email: formData.email,
+                    password: formData.password,
+                    name: formData.name,
+                    studentId: formData.studentId,
+                    department: formData.department,
+                    phone: formData.phone,
+                    gender: formData.gender
+                }
+                : { email: formData.email, password: formData.password };
+
+            const response = await fetch(`http://localhost:3000${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || '登入失敗');
+            }
+
+            // 儲存 token 到 localStorage
+            localStorage.setItem('token', data.token);
+            // 傳遞使用者資料給 App
+            onLogin(data.user);
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -47,7 +87,7 @@ const LoginPage = ({ onLogin }) => {
 
                 <div className="absolute top-4 left-4">
                     <button
-                        onClick={() => window.location.reload()}
+                        onClick={onBack}
                         className="text-pine-400 hover:text-pine-600 transition-colors p-2"
                         title="返回首頁"
                     >
@@ -97,7 +137,7 @@ const LoginPage = ({ onLogin }) => {
                                 中央大學學生請使用 Portal 帳號登入
                             </p>
                             <button
-                                onClick={onLogin}
+                                onClick={() => window.location.href = 'http://localhost:3000/api/auth/portal'}
                                 className="w-full py-3.5 px-6 bg-[#007EA8] hover:bg-[#006A8E] text-white rounded-xl font-medium shadow-lg shadow-blue-900/10 transition-all hover:scale-[1.02] flex items-center justify-center gap-3 group"
                             >
                                 <span className="text-lg">中央大學 PORTAL</span>
@@ -112,7 +152,7 @@ const LoginPage = ({ onLogin }) => {
                     {(!isRegistering && activeTab === 'password') && (
                         <form onSubmit={handleSubmit} className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-pine-700 ml-1">帳號 / Email</label>
+                                <label className="text-sm font-medium text-pine-700 ml-1">學號 / Email</label>
                                 <div className="relative">
                                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-pine-400">
                                         <User size={18} />
@@ -120,7 +160,7 @@ const LoginPage = ({ onLogin }) => {
                                     <input
                                         type="text"
                                         name="email"
-                                        placeholder="輸入您的 Email"
+                                        placeholder="輸入您的 學號 或 Email"
                                         className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pine-500/20 focus:border-pine-500 outline-none transition-all text-pine-900"
                                         value={formData.email}
                                         onChange={handleInputChange}
@@ -162,11 +202,18 @@ const LoginPage = ({ onLogin }) => {
                                 </a>
                             </div>
 
+                            {error && (
+                                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
+                                    {error}
+                                </div>
+                            )}
+
                             <button
                                 type="submit"
-                                className="w-full py-3.5 bg-pine-800 hover:bg-pine-900 text-white rounded-xl font-medium shadow-lg shadow-pine-900/10 transition-all hover:scale-[1.02] mt-4"
+                                disabled={loading}
+                                className="w-full py-3.5 bg-pine-800 hover:bg-pine-900 text-white rounded-xl font-medium shadow-lg shadow-pine-900/10 transition-all hover:scale-[1.02] mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                登入
+                                {loading ? '登入中...' : '登入'}
                             </button>
 
                             <div className="pt-4 text-center">
@@ -233,6 +280,53 @@ const LoginPage = ({ onLogin }) => {
                                 </div>
                             </div>
                             <div className="space-y-2">
+                                <label className="text-sm font-medium text-pine-700 ml-1">系所</label>
+                                <div className="relative">
+                                    <select
+                                        name="department"
+                                        className="w-full pl-4 pr-10 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pine-500/20 focus:border-pine-500 outline-none transition-all text-pine-900 appearance-none"
+                                        value={formData.department}
+                                        onChange={handleInputChange}
+                                    >
+                                        <option value="">選擇系所</option>
+                                        <option value="資工系">資工系</option>
+                                        <option value="資管系">資管系</option>
+                                        <option value="電機系">電機系</option>
+                                        <option value="數學系">數學系</option>
+                                        <option value="企管系">企管系</option>
+                                        <option value="經濟系">經濟系</option>
+                                    </select>
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-pine-400 pointer-events-none">▼</div>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-pine-700 ml-1">電話</label>
+                                    <input
+                                        type="tel"
+                                        name="phone"
+                                        placeholder="0912345678"
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pine-500/20 focus:border-pine-500 outline-none transition-all text-pine-900"
+                                        value={formData.phone}
+                                        onChange={handleInputChange}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium text-pine-700 ml-1">性別</label>
+                                    <select
+                                        name="gender"
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pine-500/20 focus:border-pine-500 outline-none transition-all text-pine-900"
+                                        value={formData.gender}
+                                        onChange={handleInputChange}
+                                    >
+                                        <option value="">選擇</option>
+                                        <option value="male">男</option>
+                                        <option value="female">女</option>
+                                        <option value="other">其他</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
                                 <label className="text-sm font-medium text-pine-700 ml-1">密碼</label>
                                 <div className="relative">
                                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-pine-400">
@@ -249,17 +343,36 @@ const LoginPage = ({ onLogin }) => {
                                 </div>
                             </div>
 
+                            {error && (
+                                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm">
+                                    {error}
+                                </div>
+                            )}
+
                             <button
                                 type="submit"
-                                className="w-full py-3.5 bg-pine-800 hover:bg-pine-900 text-white rounded-xl font-medium shadow-lg shadow-pine-900/10 transition-all hover:scale-[1.02] mt-6"
+                                disabled={loading}
+                                className="w-full py-3.5 bg-pine-800 hover:bg-pine-900 text-white rounded-xl font-medium shadow-lg shadow-pine-900/10 transition-all hover:scale-[1.02] mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                確認註冊
+                                {loading ? '註冊中...' : '確認註冊'}
                             </button>
 
                             <div className="pt-4 text-center">
                                 <button
                                     type="button"
-                                    onClick={() => setIsRegistering(false)}
+                                    onClick={() => {
+                                        setFormData({
+                                            email: '',
+                                            password: '',
+                                            name: '',
+                                            studentId: '',
+                                            department: '',
+                                            phone: '',
+                                            gender: ''
+                                        });
+                                        setError('');
+                                        setIsRegistering(false);
+                                    }}
                                     className="text-gray-500 hover:text-pine-800 text-sm"
                                 >
                                     返回登入

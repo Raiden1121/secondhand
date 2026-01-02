@@ -1,5 +1,12 @@
 const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const { PrismaPg } = require('@prisma/adapter-pg');
+const { Pool } = require('pg');
+require('dotenv').config();
+
+const connectionString = process.env.DATABASE_URL;
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   const user1 = await prisma.user.create({
@@ -21,16 +28,16 @@ async function main() {
       avatar: '👤'
     }
   });
-  
+
   const user3 = await prisma.user.create({
-      data: {
-        email: 'chen@ba.ncu.edu.tw',
-        password: 'hashed_password_123',
-        name: '企管系 陳同學',
-        department: '企管系',
-        avatar: '👤'
-      }
-    });
+    data: {
+      email: 'chen@ba.ncu.edu.tw',
+      password: 'hashed_password_123',
+      name: '企管系 陳同學',
+      department: '企管系',
+      avatar: '👤'
+    }
+  });
 
   await prisma.product.create({
     data: {
@@ -55,8 +62,8 @@ async function main() {
       sellerId: user2.id
     }
   });
-  
-    await prisma.product.create({
+
+  await prisma.product.create({
     data: {
       title: '電風扇',
       price: 500,
@@ -75,24 +82,24 @@ async function main() {
       }
     }
   });
-  
+
   await prisma.message.create({
-      data: {
-          content: '請問還有嗎？',
-          senderId: user2.id,
-          chatId: chat1.id,
-          read: false
-      }
+    data: {
+      content: '請問還有嗎？',
+      senderId: user2.id,
+      chatId: chat1.id,
+      read: false
+    }
   });
-  
+
   await prisma.notification.create({
-      data: {
-          userId: user1.id,
-          type: 'message',
-          title: '新訊息',
-          content: '數學系 李同學：請問還有嗎？',
-          read: false
-      }
+    data: {
+      userId: user1.id,
+      type: 'message',
+      title: '新訊息',
+      content: '數學系 李同學：請問還有嗎？',
+      read: false
+    }
   });
 
   console.log('Seeding finished.');

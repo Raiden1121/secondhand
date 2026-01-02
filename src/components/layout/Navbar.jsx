@@ -7,7 +7,7 @@ const Navbar = ({ currentPage, setCurrentPage, unreadCount, chatUnreadCount, isL
         <div className="bg-white/80 backdrop-blur-md border-b border-pine-100 sticky top-0 z-50">
             <div className="max-w-6xl mx-auto px-4 py-4 md:py-5">
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 cursor-pointer" onClick={() => setCurrentPage('login')}>
+                    <div className="flex items-center gap-3 cursor-pointer" onClick={() => setCurrentPage('landing')}>
                         <div className="text-2xl">
                             <img src={pineLogo} alt="Logo" className="w-16 h-16 object-cover" />
                         </div>

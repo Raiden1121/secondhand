@@ -14,6 +14,7 @@ import { mockNotifications } from './data/mock';
 function App() {
   const [currentPage, setCurrentPage] = useState('landing');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null); // 保存登入的使用者資料
   const [notifications, setNotifications] = useState(mockNotifications);
 
   // 模擬對話列表狀態
@@ -29,14 +30,58 @@ function App() {
   // User request: "對話未讀變成聊天室未讀的數量(人)" -> Number of chats with unread messages.
   const chatUnreadCount = chats.filter(c => c.unread > 0).length;
 
-  const handleLogin = () => {
+  // Check for token in URL (OAuth callback) or localStorage on mount
+  React.useEffect(() => {
+    const checkAuth = async () => {
+      let token = localStorage.getItem('token');
+
+      // Check URL for token from OAuth redirect
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlToken = urlParams.get('token');
+
+      if (urlToken) {
+        token = urlToken;
+        localStorage.setItem('token', token);
+        // Clean URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+
+      if (token) {
+        try {
+          const response = await fetch('http://localhost:3000/api/auth/me', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+
+          if (response.ok) {
+            const userData = await response.json();
+            setUser(userData);
+            setIsAuthenticated(true);
+            setCurrentPage('home');
+          } else {
+            // Token invalid
+            localStorage.removeItem('token');
+          }
+        } catch (error) {
+          console.error('Auth check failed:', error);
+          localStorage.removeItem('token');
+        }
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  const handleLogin = (userData) => {
+    setUser(userData);
     setIsAuthenticated(true);
     setCurrentPage('home');
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('token'); // 清除 token
+    setUser(null);
     setIsAuthenticated(false);
-    setCurrentPage('login');
+    setCurrentPage('landing'); // 回到 Landing 而非 Login
   };
 
   const markAsRead = (id) => {
@@ -70,7 +115,7 @@ function App() {
       {/* 主要內容區 */}
       <div className="max-w-6xl mx-auto pb-24 md:pb-8">
         {currentPage === 'landing' && <LandingPage onNavigateToLogin={() => setCurrentPage('login')} />}
-        {currentPage === 'login' && <LoginPage onLogin={handleLogin} />}
+        {currentPage === 'login' && <LoginPage onLogin={handleLogin} onBack={() => setCurrentPage('landing')} />}
         {currentPage === 'home' && <HomePage setCurrentPage={setCurrentPage} />}
         {currentPage === 'chat' && (
           <ChatPage
@@ -86,7 +131,7 @@ function App() {
             onMarkAllAsRead={markAllAsRead}
           />
         )}
-        {currentPage === 'profile' && <ProfilePage onLogout={handleLogout} />}
+        {currentPage === 'profile' && <ProfilePage user={user} onLogout={handleLogout} />}
         {currentPage.startsWith('product-') && (
           <ProductDetailPage
             productId={currentPage.split('-')[1]}
