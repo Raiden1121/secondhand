@@ -28,21 +28,22 @@ model User {
 }
 
 model Product {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   title       String
   price       Int
   description String
   images      String
   category    String
-  status      String   @default("active")
+  status      String    @default("active")
   sellerId    Int
-  seller      User     @relation(fields: [sellerId], references: [id])
+  seller      User      @relation(fields: [sellerId], references: [id])
   location    String?
-  condition   String   @default("全新")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  condition   String    @default("全新")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   favorites   Favorite[]
   reports     Report[]
+  messages    Message[]
 }
 
 model Chat {
@@ -57,6 +58,8 @@ model Message {
   id        Int      @id @default(autoincrement())
   content   String?
   image     String?
+  productId Int?
+  product   Product? @relation(fields: [productId], references: [id])
   senderId  Int
   sender    User     @relation(fields: [senderId], references: [id])
   chatId    Int

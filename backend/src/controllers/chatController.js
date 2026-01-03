@@ -59,7 +59,16 @@ export const getMessages = async (req, res) => {
             where: { chatId: parseInt(chatId) },
             orderBy: { createdAt: 'asc' },
             include: {
-                sender: { select: { id: true, name: true, avatar: true } }
+                sender: { select: { id: true, name: true, avatar: true } },
+                product: {
+                    select: {
+                        id: true,
+                        title: true,
+                        price: true,
+                        images: true,
+                        status: true
+                    }
+                }
             }
         });
         res.json(messages);
@@ -135,12 +144,12 @@ export const sendMessage = async (req, res) => {
     try {
         const userId = req.user.id;
         const { chatId } = req.params;
-        const { content } = req.body;
+        const { content, productId } = req.body;
         const image = req.file ? `/uploads/${req.file.filename}` : null;
 
-        // At least one of content or image must be provided
-        if ((!content || !content.trim()) && !image) {
-            return res.status(400).json({ message: 'Message content or image is required' });
+        // At least one of content, image, or productId must be provided
+        if ((!content || !content.trim()) && !image && !productId) {
+            return res.status(400).json({ message: 'Message content, image, or product is required' });
         }
 
         const chatIdInt = parseInt(chatId);
@@ -162,12 +171,22 @@ export const sendMessage = async (req, res) => {
             data: {
                 content: content ? content.trim() : null,
                 image: image,
+                productId: productId ? parseInt(productId) : null,
                 chatId: chatIdInt,
                 senderId: userId,
                 read: false
             },
             include: {
-                sender: { select: { id: true, name: true, avatar: true } }
+                sender: { select: { id: true, name: true, avatar: true } },
+                product: productId ? {
+                    select: {
+                        id: true,
+                        title: true,
+                        price: true,
+                        images: true,
+                        status: true
+                    }
+                } : false
             }
         });
 
@@ -212,6 +231,40 @@ export const markAsRead = async (req, res) => {
         });
 
         res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const deleteChat = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { chatId } = req.params;
+        const chatIdInt = parseInt(chatId);
+
+        // Verify user is participant
+        const chat = await prisma.chat.findFirst({
+            where: {
+                id: chatIdInt,
+                participants: { some: { id: userId } }
+            }
+        });
+
+        if (!chat) {
+            return res.status(403).json({ message: 'Not authorized to delete this chat' });
+        }
+
+        // Delete all messages in the chat first
+        await prisma.message.deleteMany({
+            where: { chatId: chatIdInt }
+        });
+
+        // Delete the chat
+        await prisma.chat.delete({
+            where: { id: chatIdInt }
+        });
+
+        res.json({ success: true, message: 'Chat deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

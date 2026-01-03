@@ -121,14 +121,20 @@ export const updateProfile = async (req, res) => {
         const userId = req.user.id;
         const { name, department, phone, gender } = req.body;
 
+        const dataToUpdate = {
+            name,
+            department,
+            phone,
+            gender
+        };
+
+        if (req.file) {
+            dataToUpdate.avatar = `/uploads/${req.file.filename}`;
+        }
+
         const updatedUser = await prisma.user.update({
             where: { id: userId },
-            data: {
-                name,
-                department,
-                phone,
-                gender
-            },
+            data: dataToUpdate,
             select: {
                 id: true,
                 name: true,

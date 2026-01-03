@@ -16,6 +16,26 @@ function App() {
   const [user, setUser] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [chats, setChats] = useState([]);
+  const [chatResetKey, setChatResetKey] = useState(0);
+  const [initialChatId, setInitialChatId] = useState(null);
+  const [initialProductId, setInitialProductId] = useState(null);
+  const [productBackPage, setProductBackPage] = useState(null); // Tracks where to return from product page
+
+  // Handle page navigation with reset capability
+  const handlePageChange = (page) => {
+    if (page === 'chat' && currentPage === 'chat') {
+      // If already on chat page, trigger reset to go back to chat list
+      setChatResetKey(prev => prev + 1);
+    } else {
+      setCurrentPage(page);
+    }
+  };
+
+  const handleNavigateToChat = (chatId, productId = null) => {
+    setInitialChatId(chatId);
+    setInitialProductId(productId);
+    setCurrentPage('chat');
+  };
 
   // Fetch notifications from API
   const fetchNotifications = useCallback(async () => {
@@ -92,7 +112,11 @@ function App() {
               setUser(userData);
               setIsAuthenticated(true);
 
-              if (!userData.name || !userData.department) {
+              // Check for hash in URL (e.g., #product-123)
+              const hash = window.location.hash.slice(1); // Remove the # symbol
+              if (hash.startsWith('product-')) {
+                setCurrentPage(hash);
+              } else if (!userData.name || !userData.department) {
                 setCurrentPage('profile');
               } else {
                 setCurrentPage('landing');
@@ -106,6 +130,13 @@ function App() {
         } catch (error) {
           console.error('Auth check failed:', error);
           localStorage.removeItem('token');
+        }
+      } else {
+        // Not logged in, check if there's a product hash to redirect after login
+        const hash = window.location.hash.slice(1);
+        if (hash.startsWith('product-')) {
+          // User needs to login first, but we'll keep the hash
+          setCurrentPage('landing');
         }
       }
     };
@@ -183,11 +214,11 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-forest-50/30 text-pine-900 font-sans">
+    <div className={`${currentPage.startsWith('product-') ? 'h-screen overflow-hidden' : 'min-h-screen'} bg-forest-50/30 text-pine-900 font-sans`}>
       {/* 頂部導航 - 手機隱藏或简化 */}
       <Navbar
         currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
+        setCurrentPage={handlePageChange}
         unreadCount={unreadCount}
         chatUnreadCount={chatUnreadCount}
         isLoggedIn={isAuthenticated}
@@ -195,7 +226,7 @@ function App() {
       />
 
       {/* 主要內容區 */}
-      <div className={currentPage === 'chat' ? '' : 'max-w-6xl mx-auto pb-24 md:pb-8'}>
+      <div className={currentPage === 'chat' ? '' : currentPage.startsWith('product-') ? 'h-[calc(100vh-64px)] overflow-hidden' : 'max-w-6xl mx-auto pb-24 md:pb-8'}>
         {currentPage === 'landing' && (
           <LandingPage
             onNavigateToLogin={() => setCurrentPage('login')}
@@ -210,6 +241,17 @@ function App() {
           <ChatPage
             chats={chats}
             onChatRead={handleChatRead}
+            resetKey={chatResetKey}
+            onRefreshChats={fetchChats}
+            initialChatId={initialChatId}
+            onClearInitialChatId={() => setInitialChatId(null)}
+            initialProductId={initialProductId}
+            onClearInitialProductId={() => setInitialProductId(null)}
+            setCurrentPage={setCurrentPage}
+            onProductFromChat={(chatId, productId) => {
+              setProductBackPage({ type: 'chat', chatId });
+              setCurrentPage(`product-${productId}`);
+            }}
           />
         )}
         {currentPage === 'post' && <PostPage setCurrentPage={setCurrentPage} />}
@@ -220,12 +262,25 @@ function App() {
             onMarkAllAsRead={markAllAsRead}
           />
         )}
-        {currentPage === 'profile' && <ProfilePage user={user} onLogout={handleLogout} />}
+        {currentPage === 'profile' && (
+          <ProfilePage
+            user={user}
+            onLogout={handleLogout}
+            setCurrentPage={setCurrentPage}
+            onNavigateToProduct={(productId) => {
+              setProductBackPage({ type: 'profile' });
+              setCurrentPage(`product-${productId}`);
+            }}
+          />
+        )}
         {currentPage.startsWith('product-') && (
           <ProductDetailPage
             productId={currentPage.split('-')[1]}
             setCurrentPage={setCurrentPage}
             onChatCreated={fetchChats}
+            onNavigateToChat={handleNavigateToChat}
+            productBackPage={productBackPage}
+            onClearBackPage={() => setProductBackPage(null)}
           />
         )}
       </div>
@@ -234,7 +289,7 @@ function App() {
       {isAuthenticated && (
         <MobileNav
           currentPage={currentPage}
-          setCurrentPage={setCurrentPage}
+          setCurrentPage={handlePageChange}
           unreadCount={unreadCount}
           chatUnreadCount={chatUnreadCount}
         />

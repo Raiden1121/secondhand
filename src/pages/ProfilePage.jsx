@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Package, Plus, X, User, Mail, IdCard, ArrowRight, AlertTriangle, Heart } from 'lucide-react';
+import { Star, Package, Plus, X, User, Mail, IdCard, ArrowRight, AlertTriangle, Heart, Camera, CheckCircle, AlertCircle } from 'lucide-react';
 import { categories } from '../data/mock';
 import pineLan from '../assets/pineLan.png';
 import pineLogo from '../assets/pineLogo.png';
+import ImageCropper from '../components/ImageCropper';
+import heic2any from 'heic2any';
 import {
     DndContext,
     closestCenter,
@@ -54,7 +56,7 @@ const SortablePhoto = ({ id, url, index, onRemove }) => {
     );
 };
 
-const ProfilePage = ({ user, onLogout }) => {
+const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct }) => {
     const [editingProduct, setEditingProduct] = useState(null);
     const [formData, setFormData] = useState({
         title: '',
@@ -68,6 +70,27 @@ const ProfilePage = ({ user, onLogout }) => {
     const [favorites, setFavorites] = useState([]);
     const [imageList, setImageList] = useState([]);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [toast, setToast] = useState(null);
+    const [isToastExiting, setIsToastExiting] = useState(false);
+
+    // Toast Timer and Animation
+    useEffect(() => {
+        if (toast) {
+            setIsToastExiting(false);
+            const timer = setTimeout(() => {
+                setIsToastExiting(true);
+                setTimeout(() => {
+                    setToast(null);
+                    setIsToastExiting(false);
+                }, 450);
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [toast]);
+
+    const showToast = (type, message) => {
+        setToast({ type, message });
+    };
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -135,6 +158,26 @@ const ProfilePage = ({ user, onLogout }) => {
             );
         }
         return '📦';
+    };
+
+    const getAvatarUrl = (avatar) => {
+        if (!avatar) return null;
+        if (avatar.startsWith('/uploads/')) {
+            return `http://localhost:3000${avatar}`;
+        }
+        // Check if it's a blob url (preview) or full http URL
+        if (avatar.startsWith('blob:') || avatar.startsWith('http')) {
+            return avatar;
+        }
+        return null; // For emoji or text, handle in render
+    };
+
+    const renderAvatar = (avatarUrl, sizeClass = "w-20 h-20 md:w-24 md:h-24", textSize = "text-4xl") => {
+        const url = getAvatarUrl(avatarUrl);
+        if (url) {
+            return <img src={url} alt="Avatar" className={`w-full h-full object-cover rounded-full`} />;
+        }
+        return <span className={textSize}>{avatarUrl || '👤'}</span>;
     };
 
     const handleImageSelect = (e) => {
@@ -356,6 +399,12 @@ const ProfilePage = ({ user, onLogout }) => {
         studentId: ''
     });
 
+    // Avatar Upload State
+    const [showCropper, setShowCropper] = useState(false);
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [avatarPreview, setAvatarPreview] = useState(null);
+    const [avatarFile, setAvatarFile] = useState(null);
+
     const handleEditProfile = () => {
         if (!user) return;
         setProfileFormData({
@@ -366,7 +415,103 @@ const ProfilePage = ({ user, onLogout }) => {
             email: user.email || '',
             studentId: user.studentId || ''
         });
+        setAvatarPreview(null);
+        setAvatarFile(null);
         setIsEditingProfile(true);
+    };
+
+    const handleFileSelect = async (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+            let file = e.target.files[0];
+
+            // Basic validation
+            if (!file.type.startsWith('image/')) {
+                alert('請上傳圖片檔案');
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) { // 5MB
+                alert('圖片大小不能超過 5MB');
+                return;
+            }
+
+            // Convert HEIC to JPEG if needed
+            if (file.type === 'image/heic' || file.type === 'image/heif' || file.name.toLowerCase().endsWith('.heic')) {
+                try {
+                    const convertedBlob = await heic2any({
+                        blob: file,
+                        toType: 'image/jpeg',
+                        quality: 0.9
+                    });
+                    // heic2any might return array of blobs or single blob
+                    file = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+                } catch (error) {
+                    console.error('HEIC conversion error:', error);
+                    alert('HEIC 圖片轉換失敗，請嘗試其他格式');
+                    return;
+                }
+            }
+
+            const reader = new FileReader();
+            reader.addEventListener('load', () => {
+                setSelectedFile(reader.result);
+                setShowCropper(true);
+            });
+            reader.readAsDataURL(file);
+            e.target.value = ''; // Reset input
+        }
+    };
+
+    const handleCropComplete = (blob) => {
+        if (isEditingProfile) {
+            setAvatarFile(blob);
+            setAvatarPreview(URL.createObjectURL(blob));
+            setShowCropper(false);
+            setSelectedFile(null);
+        } else {
+            // Direct upload mode
+            uploadAvatar(blob);
+            setShowCropper(false);
+            setSelectedFile(null);
+        }
+    };
+
+    const uploadAvatar = async (blob) => {
+        if (!user) return;
+        try {
+            const token = localStorage.getItem('token');
+            const formData = new FormData();
+            formData.append('avatar', blob, 'avatar.jpg');
+            // Preserve existing data
+            formData.append('name', user.name || '');
+            formData.append('department', user.department || '');
+            formData.append('phone', user.phone || '');
+            formData.append('gender', user.gender || '');
+
+            const response = await fetch('http://localhost:3000/api/auth/update', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData,
+            });
+
+            if (response.ok) {
+                const updatedUser = await response.json();
+                // Update avatar preview locally
+                setAvatarPreview(updatedUser.avatar ? `http://localhost:3000${updatedUser.avatar}` : null);
+                showToast('success', '頭像更新成功');
+            } else {
+                showToast('error', '頭像更新失敗');
+            }
+        } catch (error) {
+            console.error('Error updating avatar:', error);
+            showToast('error', '系統錯誤，請稍後再試');
+        }
+    };
+
+    const handleCancelCrop = () => {
+        setShowCropper(false);
+        setSelectedFile(null);
     };
 
     // Check for mandatory fields on mount
@@ -387,18 +532,22 @@ const ProfilePage = ({ user, onLogout }) => {
 
         try {
             const token = localStorage.getItem('token');
+            const formData = new FormData();
+            formData.append('name', profileFormData.name);
+            formData.append('department', profileFormData.department);
+            formData.append('phone', profileFormData.phone || '');
+            formData.append('gender', profileFormData.gender || '');
+
+            if (avatarFile) {
+                formData.append('avatar', avatarFile, 'avatar.jpg');
+            }
+
             const response = await fetch('http://localhost:3000/api/auth/update', {
                 method: 'PUT',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({
-                    name: profileFormData.name,
-                    department: profileFormData.department,
-                    phone: profileFormData.phone,
-                    gender: profileFormData.gender,
-                }),
+                body: formData,
             });
 
             if (response.ok) {
@@ -446,10 +595,31 @@ const ProfilePage = ({ user, onLogout }) => {
 
     return (
         <div className="px-4 space-y-5 max-w-2xl mx-auto">
+            {/* Toast Notification */}
+            {toast && (
+                <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-2xl shadow-lg flex items-center gap-3 ${toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-500 text-white'
+                    } ${isToastExiting ? 'animate-slide-up' : 'animate-slide-down'}`}>
+                    {toast.type === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
+                    <span className="font-medium">{toast.message}</span>
+                </div>
+            )}
+
             <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 md:p-8 mt-6 border border-pine-50 shadow-sm">
                 <div className="flex items-center gap-5">
-                    <div className="w-20 h-20 md:w-24 md:h-24 bg-cream-100 rounded-full flex items-center justify-center text-4xl flex-shrink-0 border-4 border-white shadow-sm">
-                        {user?.avatar || '👤'}
+                    <div className="relative group cursor-pointer" onClick={() => document.getElementById('avatar-upload-main').click()}>
+                        <div className="w-20 h-20 md:w-24 md:h-24 bg-cream-100 rounded-full flex items-center justify-center flex-shrink-0 border-4 border-white shadow-sm overflow-hidden group-hover:opacity-90 transition">
+                            {renderAvatar(avatarPreview || user?.avatar)}
+                        </div>
+                        <div className="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Camera className="text-white drop-shadow-md" size={24} />
+                        </div>
+                        <input
+                            type="file"
+                            id="avatar-upload-main"
+                            className="hidden"
+                            accept="image/*"
+                            onChange={handleFileSelect}
+                        />
                     </div>
                     <div>
                         <h2 className="text-xl md:text-2xl font-light text-pine-900">
@@ -504,7 +674,10 @@ const ProfilePage = ({ user, onLogout }) => {
                         <p className="text-center text-pine-400 py-4 text-sm">還沒有收藏任何物品</p>
                     ) : (
                         favorites.map(product => (
-                            <div key={product.id} className="flex items-center gap-4 p-4 border border-pine-100 rounded-xl hover:bg-cream-50 transition cursor-pointer">
+                            <div
+                                key={product.id}
+                                onClick={() => onNavigateToProduct ? onNavigateToProduct(product.id) : setCurrentPage(`product-${product.id}`)}
+                                className="flex items-center gap-4 p-4 border border-pine-100 rounded-xl hover:bg-cream-50 transition cursor-pointer">
                                 <div className="w-16 h-16 bg-cream-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 text-pine-600 overflow-hidden">
                                     {getProductImage(product)}
                                 </div>
@@ -663,18 +836,23 @@ const ProfilePage = ({ user, onLogout }) => {
 
                         {/* Footer Buttons */}
                         <div className="p-6 pt-0 flex gap-3">
-                            <button
-                                onClick={handleSave}
-                                className="flex-1 bg-pine-800 text-white py-4 rounded-2xl font-medium hover:bg-pine-700 transition shadow-md hover:shadow-lg transform active:scale-[0.99]"
-                            >
-                                保留
-                            </button>
+
                             <button
                                 onClick={handleDelete}
                                 className="flex-1 bg-red-500 text-white py-4 rounded-2xl font-medium hover:bg-red-600 transition shadow-md hover:shadow-lg transform active:scale-[0.99]"
                             >
                                 刪除
                             </button>
+
+                        </div>
+                        <div className="p-6 pt-0 flex gap-3">
+                            <button
+                                onClick={handleSave}
+                                className="flex-1 bg-pine-800 text-white py-4 rounded-2xl font-medium hover:bg-pine-700 transition shadow-md hover:shadow-lg transform active:scale-[0.99]"
+                            >
+                                保留
+                            </button>
+
                         </div>
                     </div>
                 </div>
@@ -734,6 +912,29 @@ const ProfilePage = ({ user, onLogout }) => {
                                         </div>
                                     </div>
                                 )}
+
+                                {/* Avatar Upload Section */}
+                                <div className="flex flex-col items-center mb-6">
+                                    <div className="relative group cursor-pointer">
+                                        <div className="w-28 h-28 rounded-full overflow-hidden bg-stone-200 border-4 border-white shadow-lg flex items-center justify-center">
+                                            {renderAvatar(avatarPreview || user?.avatar, "w-full h-full", "text-5xl")}
+                                        </div>
+                                        <label htmlFor="avatar-upload" className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                                            <Camera className="text-white" size={32} />
+                                        </label>
+                                        <div className="absolute bottom-0 right-0 bg-pine-600 text-white p-2 rounded-full border-2 border-white shadow-sm pointer-events-none">
+                                            <Camera size={14} />
+                                        </div>
+                                    </div>
+                                    <input
+                                        type="file"
+                                        id="avatar-upload"
+                                        className="hidden"
+                                        accept="image/*"
+                                        onChange={handleFileSelect}
+                                    />
+                                    <p className="text-xs text-stone-500 mt-2">點擊更換頭像 (支援 jpg, png)</p>
+                                </div>
 
                                 {/* Name Field */}
                                 <div className="group">
@@ -884,6 +1085,15 @@ const ProfilePage = ({ user, onLogout }) => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Cropper Modal */}
+            {showCropper && selectedFile && (
+                <ImageCropper
+                    imageSrc={selectedFile}
+                    onCancel={handleCancelCrop}
+                    onCropComplete={handleCropComplete}
+                />
             )}
         </div>
     );

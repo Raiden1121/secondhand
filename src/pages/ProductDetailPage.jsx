@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, Star, MapPin, Flag, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
+import { Heart, Star, MapPin, Flag, ArrowLeft, CheckCircle, AlertCircle, Share2 } from 'lucide-react';
 import { meetingPoints } from '../data/mock';
 
-const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated }) => {
+const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigateToChat, productBackPage, onClearBackPage }) => {
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -11,6 +11,7 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated }) => {
     const [reportReason, setReportReason] = useState('');
     const [submitting, setSubmitting] = useState(false);
     const [toast, setToast] = useState(null);
+    const [isToastExiting, setIsToastExiting] = useState(false);
 
     useEffect(() => {
         const fetchProduct = async () => {
@@ -29,10 +30,17 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated }) => {
         fetchProduct();
     }, [productId]);
 
-    // Auto-hide toast after 3 seconds
+    // Toast Timer and Animation
     useEffect(() => {
         if (toast) {
-            const timer = setTimeout(() => setToast(null), 3000);
+            setIsToastExiting(false);
+            const timer = setTimeout(() => {
+                setIsToastExiting(true);
+                setTimeout(() => {
+                    setToast(null);
+                    setIsToastExiting(false);
+                }, 450); // Slightly less than 0.5s animation
+            }, 3000);
             return () => clearTimeout(timer);
         }
     }, [toast]);
@@ -85,6 +93,17 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated }) => {
             }
         } catch (err) {
             console.error('Error toggling favorite:', err);
+        }
+    };
+
+    const handleShare = async () => {
+        try {
+            const url = `${window.location.origin}/#product-${productId}`;
+            await navigator.clipboard.writeText(url);
+            showToast('success', '連結已複製到剪貼簿');
+        } catch (err) {
+            console.error('Failed to copy:', err);
+            showToast('error', '複製失敗，請稍後再試');
         }
     };
 
@@ -147,11 +166,19 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated }) => {
             });
 
             if (response.ok) {
+                const chat = await response.json();
+
                 // Refresh chat list in App component
                 if (onChatCreated) {
                     await onChatCreated();
                 }
-                setCurrentPage('chat');
+
+                // Navigate to chat with product context
+                if (onNavigateToChat) {
+                    onNavigateToChat(chat.id, productId);
+                } else {
+                    setCurrentPage('chat');
+                }
             } else {
                 const err = await response.json();
                 showToast('error', err.message || '無法開啟對話');
@@ -181,114 +208,154 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated }) => {
     ];
 
     return (
-        <div className="min-h-screen bg-transparent">
+        <div className="h-full overflow-hidden bg-transparent">
+            {/* Toast Notification */}
             {/* Toast Notification */}
             {toast && (
-                <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-2xl shadow-lg flex items-center gap-3 ${toast.type === 'success' ? 'bg-forest-600 text-white' : 'bg-red-500 text-white'
-                    }`} style={{ animation: 'fadeIn 0.3s ease-out' }}>
+                <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-2xl shadow-lg flex items-center gap-3 ${toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-500 text-white'
+                    } ${isToastExiting ? 'animate-slide-up' : 'animate-slide-down'}`}>
                     {toast.type === 'success' ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
                     <span className="font-medium">{toast.message}</span>
                 </div>
             )}
 
-            <div className="max-w-2xl mx-auto">
-                <button
-                    onClick={() => setCurrentPage('home')}
-                    className="px-4 py-6 text-pine-600 hover:text-pine-800 text-sm flex items-center gap-1"
-                >
-                    <ArrowLeft size={16} /> 返回
-                </button>
-
-                <div className="bg-white rounded-t-3xl overflow-hidden shadow-sm">
-                    <div className="aspect-square bg-cream-50 flex items-center justify-center text-9xl overflow-hidden">
+            <div className="max-w-2xl mx-auto h-full flex flex-col">
+                <div className="bg-white rounded-t-3xl shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
+                    {/* Image Section - 40% height with back button overlay */}
+                    <div className="h-[38%] bg-cream-50 flex items-center justify-center text-9xl overflow-hidden flex-shrink-0 relative">
+                        {/* Back Button - Absolutely positioned */}
+                        <button
+                            onClick={() => {
+                                if (productBackPage) {
+                                    if (productBackPage.type === 'chat' && productBackPage.chatId) {
+                                        // Navigate back to chat
+                                        if (onNavigateToChat) {
+                                            onNavigateToChat(productBackPage.chatId);
+                                        } else {
+                                            setCurrentPage('chat');
+                                        }
+                                    } else if (productBackPage.type === 'profile') {
+                                        // Navigate back to profile
+                                        setCurrentPage('profile');
+                                    }
+                                    if (onClearBackPage) onClearBackPage();
+                                } else {
+                                    setCurrentPage('home');
+                                }
+                            }}
+                            className="absolute top-4 left-4 w-10 h-10 bg-pine-800/90 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-pine-700 transition shadow-lg z-10"
+                            title="返回"
+                        >
+                            <ArrowLeft size={20} />
+                        </button>
                         {coverImage ? (
-                            <img src={`http://localhost:3000${coverImage}`} alt={product.title} className="w-full h-full object-cover" />
+                            <img src={`http://localhost:3000${coverImage}`} alt={product.title} className="w-full h-full object-contain p-4" />
                         ) : (
                             <span className="text-pine-200">📦</span>
                         )}
                     </div>
 
-                    <div className="p-6 md:p-8 space-y-6">
-                        <div>
-                            <div className="flex items-start justify-between mb-3">
-                                <h1 className="text-2xl md:text-3xl font-light text-pine-900 tracking-wide">{product.title}</h1>
-                                <button
-                                    onClick={toggleFavorite}
-                                    className="p-2 hover:bg-cream-100 rounded-full transition"
-                                >
-                                    <Heart
-                                        size={24}
-                                        className={isFavorited ? "text-red-500 fill-red-500" : "text-pine-400"}
-                                    />
-                                </button>
+                    {/* Details Section - 63% height, flex column */}
+                    <div className="h-[59%] p-4 md:p-6 pb-16 flex flex-col min-h-0">
+                        {/* Header Info - Fixed */}
+                        <div className="flex-shrink-0 space-y-2">
+                            <div>
+                                <div className="flex items-start justify-between mb-1">
+                                    <h1 className="text-2xl md:text-3xl font-light text-pine-900 tracking-wide truncate">{product.title}</h1>
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                        <button
+                                            onClick={handleShare}
+                                            className="p-1 hover:bg-cream-100 rounded-full transition"
+                                            title="分享商品"
+                                        >
+                                            <Share2
+                                                size={20}
+                                                className="text-pine-400"
+                                            />
+                                        </button>
+                                        <button
+                                            onClick={toggleFavorite}
+                                            className="p-1 hover:bg-cream-100 rounded-full transition"
+                                            title="收藏商品"
+                                        >
+                                            <Heart
+                                                size={24}
+                                                className={isFavorited ? "text-red-500 fill-red-500" : "text-pine-400"}
+                                            />
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className="bg-forest-100 text-forest-800 px-3 py-1 rounded-full text-xs font-medium">
+                                        {product.category}
+                                    </span>
+                                    <span className="text-pine-500 text-xs">
+                                        {product.status === 'active' ? '販售中' : '已售出'}
+                                    </span>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <span className="bg-forest-100 text-forest-800 px-3 py-1 rounded-full text-xs font-medium">
-                                    {product.category}
-                                </span>
-                                <span className="text-pine-500 text-xs">
-                                    {product.status === 'active' ? '販售中' : '已售出'}
-                                </span>
+
+                            <div className="text-3xl md:text-4xl font-light text-pine-800">
+                                NT$ {product.price?.toLocaleString?.() || product.price}
                             </div>
-                        </div>
 
-                        <div className="text-3xl md:text-4xl font-light text-pine-800">
-                            NT$ {product.price?.toLocaleString?.() || product.price}
-                        </div>
-
-                        <div className="border-t border-pine-100 pt-6">
-                            <h3 className="text-sm font-medium text-pine-600 mb-3">賣家</h3>
-                            <div className="flex items-center justify-between">
+                            <div className="border-t border-pine-100 pt-3 flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-cream-100 rounded-full flex items-center justify-center text-lg overflow-hidden">
+                                    <div className="w-8 h-8 bg-cream-100 rounded-full flex items-center justify-center text-base overflow-hidden">
                                         👤
                                     </div>
                                     <div>
-                                        <span className="text-pine-800 font-medium block">{product.seller?.name || '未知賣家'}</span>
+                                        <span className="text-pine-800 font-medium block text-sm">{product.seller?.name || '未知賣家'}</span>
                                         <span className="text-xs text-pine-500">{product.seller?.department}</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-1">
-                                    <Star size={16} className="text-amber-500 fill-amber-500" />
-                                    <span className="font-medium text-pine-700">4.8</span>
+                                    <Star size={14} className="text-amber-500 fill-amber-500" />
+                                    <span className="font-medium text-pine-700 text-sm">4.8</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="border-t border-pine-100 pt-6">
-                            <h3 className="text-sm font-medium text-pine-600 mb-3">關於這件物品</h3>
-                            <p className="text-pine-700 leading-relaxed whitespace-pre-line">
-                                {product.description || '這是一件用心保養的物品，希望能找到懂得欣賞它的新主人。'}
-                            </p>
-                        </div>
-
-                        <div className="border-t border-pine-100 pt-6">
-                            <h3 className="text-sm font-medium text-pine-600 mb-3 flex items-center gap-2">
-                                <MapPin size={18} className="text-pine-400" />
-                                建議見面地點
-                            </h3>
-                            <div className="flex flex-wrap gap-2">
-                                {(product.location ? [product.location] : meetingPoints).map(point => (
-                                    <span key={point} className="bg-forest-50 text-forest-700 px-3 py-1.5 rounded-full text-xs border border-forest-100">
-                                        {point}
-                                    </span>
-                                ))}
+                        {/* Description - Flexible Loop Scroll */}
+                        <div className="flex-1 min-h-0 border-t border-pine-100 mt-3 pt-3 flex flex-col">
+                            <h3 className="text-sm font-medium text-pine-600 mb-2 flex-shrink-0">關於這件物品</h3>
+                            <div className="flex-1 overflow-y-auto overflow-x-hidden pr-2 border border-pine-100 rounded-lg p-3">
+                                <p className="text-pine-700 leading-relaxed whitespace-pre-line break-all text-sm">
+                                    {product.description}
+                                </p>
                             </div>
                         </div>
 
-                        <div className="flex gap-3 pt-4">
-                            <button
-                                onClick={handleStartChat}
-                                className="flex-1 bg-pine-800 text-white py-4 rounded-2xl font-medium hover:bg-pine-700 transition shadow-md hover:shadow-lg transform active:scale-[0.98]"
-                            >
-                                開始對話
-                            </button>
-                            <button
-                                onClick={() => setShowReportModal(true)}
-                                className="px-5 py-4 border border-pine-200 text-pine-600 rounded-2xl hover:bg-cream-50 transition"
-                            >
-                                <Flag size={20} />
-                            </button>
+                        {/* Footer Info - Fixed */}
+                        <div className="flex-shrink-0 pt-3 space-y-3">
+                            <div className="border-t border-pine-100 pt-3">
+                                <h3 className="text-sm font-medium text-pine-600 mb-2 flex items-center gap-2">
+                                    <MapPin size={16} className="text-pine-400" />
+                                    建議見面地點
+                                </h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {(product.location ? [product.location] : meetingPoints).map(point => (
+                                        <span key={point} className="bg-forest-50 text-forest-700 px-2 py-1 rounded-full text-xs border border-forest-100">
+                                            {point}
+                                        </span>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={handleStartChat}
+                                    className="flex-1 bg-pine-800 text-white py-3 rounded-2xl font-medium hover:bg-pine-700 transition shadow-md hover:shadow-lg transform active:scale-[0.98] text-sm"
+                                >
+                                    開始對話
+                                </button>
+                                <button
+                                    onClick={() => setShowReportModal(true)}
+                                    className="px-4 py-3 border border-pine-200 text-pine-600 rounded-2xl hover:bg-cream-50 transition"
+                                >
+                                    <Flag size={18} />
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

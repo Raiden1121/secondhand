@@ -160,7 +160,7 @@ const LandingPage = ({ onNavigateToLogin, isAuthenticated, onNavigateToHome, onN
                             我們是中央大學的學生開發團隊。希望能透過這個平台，讓畢業學長姐帶不走的二手物品，
                             能夠便利地流轉到需要的學弟妹手中。減少浪費，不僅是環保，更是一種情感的延續。
                         </p>
-                        <div className="pt-4 grid grid-cols-3 gap-8 text-center border-t border-forest-800 mt-8">
+                        {/* <div className="pt-4 grid grid-cols-3 gap-8 text-center border-t border-forest-800 mt-8">
                             <div>
                                 <div className="text-2xl font-bold text-white">500+</div>
                                 <div className="text-xs text-forest-300 mt-1">上架物品</div>
@@ -173,7 +173,7 @@ const LandingPage = ({ onNavigateToLogin, isAuthenticated, onNavigateToHome, onN
                                 <div className="text-2xl font-bold text-white">NCU</div>
                                 <div className="text-xs text-forest-300 mt-1">校園專屬</div>
                             </div>
-                        </div>
+                        </div> */}
                     </div>
                     <div className="flex-1 hidden md:block relative z-10">
                         <img src="../src/assets/pineHand2Hand.png" alt="pineBack" />
