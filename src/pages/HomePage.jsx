@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Search } from 'lucide-react';
 import ProductCard from '../components/products/ProductCard';
-import { categories, departments } from '../data/mock';
+import { categories, colleges } from '../data/mock';
 
 const sortOptions = [
     { value: 'default', label: '預設排序' },
@@ -17,9 +17,25 @@ const HomePage = ({ setCurrentPage }) => {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedCategory, setSelectedCategory] = useState('全部');
+    const [selectedCollege, setSelectedCollege] = useState('全部學院');
     const [selectedDept, setSelectedDept] = useState('全部系所');
     const [searchQuery, setSearchQuery] = useState('');
     const [sortBy, setSortBy] = useState('default');
+
+    // Get available departments based on selected college
+    const availableDepts = useMemo(() => {
+        if (selectedCollege === '全部學院') {
+            // Get all departments from all colleges
+            return ['全部系所', ...colleges.flatMap(c => c.departments)];
+        }
+        const college = colleges.find(c => c.name === selectedCollege);
+        return college ? ['全部系所', ...college.departments] : ['全部系所'];
+    }, [selectedCollege]);
+
+    // Reset department selection when college changes
+    useEffect(() => {
+        setSelectedDept('全部系所');
+    }, [selectedCollege]);
 
     // Fetch products from API
     useEffect(() => {
@@ -56,7 +72,17 @@ const HomePage = ({ setCurrentPage }) => {
     // Filter products
     const filteredProducts = products.filter(product => {
         const matchCategory = selectedCategory === '全部' || product.category === selectedCategory;
-        const matchDept = selectedDept === '全部系所' || product.seller?.department === selectedDept;
+
+        // Department filter: check if product's seller department is in the available list
+        let matchDept = true;
+        if (selectedDept !== '全部系所') {
+            matchDept = product.seller?.department === selectedDept;
+        } else if (selectedCollege !== '全部學院') {
+            // If college is selected but dept is "全部系所", match any dept in that college
+            const college = colleges.find(c => c.name === selectedCollege);
+            matchDept = college ? college.departments.includes(product.seller?.department) : true;
+        }
+
         const matchSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase());
         return matchCategory && matchDept && matchSearch;
     });
@@ -128,21 +154,46 @@ const HomePage = ({ setCurrentPage }) => {
                 </div>
             </div>
 
-            {/* 系所篩選 & 排序 */}
-            <div className="px-4 flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
+            {/* 學院 & 系所篩選 & 排序 */}
+            <div className="px-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <h3 className="text-sm font-medium text-pine-700 mb-3">學院</h3>
+                    <select
+                        value={selectedCollege}
+                        onChange={(e) => setSelectedCollege(e.target.value)}
+                        className="w-full p-3 bg-white/80 border border-pine-200 rounded-2xl text-pine-700 focus:outline-none focus:border-forest-400 focus:ring-1 focus:ring-forest-200 transition shadow-sm"
+                    >
+                        {colleges.map(college => (
+                            <option key={college.name} value={college.name}>{college.name}</option>
+                        ))}
+                    </select>
+                </div>
+                <div>
                     <h3 className="text-sm font-medium text-pine-700 mb-3">系所</h3>
                     <select
                         value={selectedDept}
                         onChange={(e) => setSelectedDept(e.target.value)}
                         className="w-full p-3 bg-white/80 border border-pine-200 rounded-2xl text-pine-700 focus:outline-none focus:border-forest-400 focus:ring-1 focus:ring-forest-200 transition shadow-sm"
                     >
-                        {departments.map(dept => (
-                            <option key={dept} value={dept}>{dept}</option>
-                        ))}
+                        <option value="全部系所">全部系所</option>
+                        {selectedCollege === '全部學院' ? (
+                            // Show all departments grouped by college
+                            colleges.filter(c => c.name !== '全部學院').map(college => (
+                                <optgroup key={college.name} label={college.name}>
+                                    {college.departments.map(dept => (
+                                        <option key={dept} value={dept}>{dept}</option>
+                                    ))}
+                                </optgroup>
+                            ))
+                        ) : (
+                            // Show only departments from selected college
+                            availableDepts.filter(d => d !== '全部系所').map(dept => (
+                                <option key={dept} value={dept}>{dept}</option>
+                            ))
+                        )}
                     </select>
                 </div>
-                <div className="flex-1">
+                <div>
                     <h3 className="text-sm font-medium text-pine-700 mb-3">排序</h3>
                     <select
                         value={sortBy}

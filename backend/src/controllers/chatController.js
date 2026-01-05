@@ -15,7 +15,8 @@ export const getConversations = async (req, res) => {
                 },
                 messages: {
                     orderBy: { createdAt: 'desc' },
-                    take: 1
+                    take: 1,
+                    select: { content: true, image: true, productId: true, createdAt: true }
                 }
             },
             orderBy: { updatedAt: 'desc' }
@@ -35,13 +36,25 @@ export const getConversations = async (req, res) => {
                 }
             });
 
+            // Determine last message preview
+            let lastMsgPreview = '';
+            if (lastMsg) {
+                if (lastMsg.content && lastMsg.content.trim()) {
+                    lastMsgPreview = lastMsg.content;
+                } else if (lastMsg.image) {
+                    lastMsgPreview = '📷 傳送了圖片';
+                } else if (lastMsg.productId) {
+                    lastMsgPreview = '📦 分享了商品';
+                }
+            }
+
             return {
                 id: chat.id,
                 partnerId: otherUser.id, // Add partner ID for navigation to seller page
                 name: otherUser.name || 'Unknown',
                 avatar: otherUser.avatar,
                 department: otherUser.department,
-                lastMsg: lastMsg ? lastMsg.content : '',
+                lastMsg: lastMsgPreview,
                 time: lastMsg ? lastMsg.createdAt : chat.createdAt,
                 unread: unreadCount
             };

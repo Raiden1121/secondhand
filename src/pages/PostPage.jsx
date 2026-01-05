@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, X, CheckCircle, AlertCircle } from 'lucide-react';
-import { categories } from '../data/mock';
+import { Plus, X, CheckCircle, AlertCircle, ChevronDown, ChevronUp, MapPin } from 'lucide-react';
+import { categories, meetingPointCategories } from '../data/mock';
 import ImageCropper from '../components/ImageCropper';
 import heic2any from 'heic2any';
 import {
@@ -60,7 +60,9 @@ const PostPage = ({ setCurrentPage }) => {
     const [price, setPrice] = useState('');
     const [condition, setCondition] = useState('全新');
     const [description, setDescription] = useState('');
-    const [location, setLocation] = useState('');
+    const [selectedLocations, setSelectedLocations] = useState([]);
+    const [showLocationPicker, setShowLocationPicker] = useState(false);
+    const [expandedCategories, setExpandedCategories] = useState({});
     const [images, setImages] = useState([]);
     const [previews, setPreviews] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -71,6 +73,18 @@ const PostPage = ({ setCurrentPage }) => {
     const [pendingFiles, setPendingFiles] = useState([]);
     const [isConverting, setIsConverting] = useState(false);
     const fileInputRef = useRef(null);
+    const locationPickerRef = useRef(null);
+
+    // Close location picker when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (locationPickerRef.current && !locationPickerRef.current.contains(event.target)) {
+                setShowLocationPicker(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     // Auto-hide toast after 3 seconds
     useEffect(() => {
@@ -82,6 +96,21 @@ const PostPage = ({ setCurrentPage }) => {
 
     const showToast = (type, message) => {
         setToast({ type, message });
+    };
+
+    const toggleCategory = (catName) => {
+        setExpandedCategories(prev => ({
+            ...prev,
+            [catName]: !prev[catName]
+        }));
+    };
+
+    const toggleLocation = (location) => {
+        setSelectedLocations(prev =>
+            prev.includes(location)
+                ? prev.filter(l => l !== location)
+                : [...prev, location]
+        );
     };
 
     const handleImageSelect = async (e) => {
@@ -204,7 +233,7 @@ const PostPage = ({ setCurrentPage }) => {
         if (images.length === 0) newErrors.images = '請上傳至少一張照片';
         if (!title.trim()) newErrors.title = '請輸入物品名稱';
         if (!price || parseInt(price) < 0) newErrors.price = '請輸入有效價格';
-        if (!location.trim()) newErrors.location = '請輸入面交地點';
+        if (selectedLocations.length === 0) newErrors.location = '請選擇至少一個面交地點';
         if (!description.trim()) newErrors.description = '請輸入物品說明';
 
         setErrors(newErrors);
@@ -253,7 +282,7 @@ const PostPage = ({ setCurrentPage }) => {
             formData.append('price', parseInt(price));
             formData.append('condition', condition);
             formData.append('description', description.trim());
-            formData.append('location', location.trim());
+            formData.append('location', selectedLocations.join('、'));
 
             images.forEach(file => {
                 formData.append('images', file);
@@ -274,7 +303,7 @@ const PostPage = ({ setCurrentPage }) => {
                 setPrice('');
                 setCondition('全新');
                 setDescription('');
-                setLocation('');
+                setSelectedLocations([]);
                 previews.forEach(url => URL.revokeObjectURL(url));
                 setImages([]);
                 setPreviews([]);
@@ -342,8 +371,8 @@ const PostPage = ({ setCurrentPage }) => {
                                     <div
                                         onClick={() => !isConverting && fileInputRef.current?.click()}
                                         className={`aspect-square border-2 border-dashed border-pine-200 rounded-xl flex flex-col items-center justify-center transition group ${isConverting
-                                                ? 'opacity-50 cursor-not-allowed'
-                                                : 'hover:bg-cream-50 cursor-pointer'
+                                            ? 'opacity-50 cursor-not-allowed'
+                                            : 'hover:bg-cream-50 cursor-pointer'
                                             }`}
                                     >
                                         {isConverting ? (
@@ -436,19 +465,77 @@ const PostPage = ({ setCurrentPage }) => {
                     </div>
                 </div>
 
-                {/* Location - REQUIRED */}
-                <div>
+                {/* Location - Multi-select */}
+                <div ref={locationPickerRef}>
                     <label className="block text-sm font-medium text-pine-600 mb-3">
                         建議面交地點 <span className="text-red-500">*</span>
                     </label>
-                    <input
-                        type="text"
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                        className={`w-full p-3 border rounded-2xl text-pine-800 focus:outline-none focus:border-forest-400 focus:ring-1 focus:ring-forest-200 transition bg-white/50 ${errors.location ? 'border-red-300' : 'border-pine-200'}`}
-                        placeholder="例如：中大湖、圖書館"
-                    />
+
+                    {/* Selected Locations Display */}
+                    <div
+                        onClick={() => setShowLocationPicker(!showLocationPicker)}
+                        className={`w-full p-3 border rounded-2xl text-pine-800 focus:outline-none transition bg-white/50 cursor-pointer flex items-center justify-between ${errors.location ? 'border-red-300' : 'border-pine-200'} ${showLocationPicker ? 'border-forest-400 ring-1 ring-forest-200' : ''}`}
+                    >
+                        <div className="flex items-center gap-2 flex-wrap flex-1">
+                            <MapPin size={18} className="text-pine-400 flex-shrink-0" />
+                            {selectedLocations.length === 0 ? (
+                                <span className="text-pine-400">點擊選擇面交地點...</span>
+                            ) : (
+                                <span className="text-pine-800">{selectedLocations.join('、')}</span>
+                            )}
+                        </div>
+                        {showLocationPicker ? <ChevronUp size={18} className="text-pine-400" /> : <ChevronDown size={18} className="text-pine-400" />}
+                    </div>
+
+                    {/* Location Picker Dropdown */}
+                    {showLocationPicker && (
+                        <div className="mt-2 border border-pine-200 rounded-2xl bg-white shadow-lg max-h-80 overflow-y-auto">
+                            {meetingPointCategories.map((cat) => (
+                                <div key={cat.name} className="border-b border-pine-100 last:border-b-0">
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleCategory(cat.name)}
+                                        className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-cream-50 transition"
+                                    >
+                                        <span className="font-medium text-pine-700">{cat.name}</span>
+                                        {expandedCategories[cat.name] ? <ChevronUp size={16} className="text-pine-400" /> : <ChevronDown size={16} className="text-pine-400" />}
+                                    </button>
+                                    {expandedCategories[cat.name] && (
+                                        <div className="px-4 pb-3 grid grid-cols-2 gap-2">
+                                            {cat.locations.map((loc) => (
+                                                <label
+                                                    key={loc}
+                                                    className={`flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition text-sm ${selectedLocations.includes(loc)
+                                                            ? 'bg-forest-100 text-forest-800 border border-forest-300'
+                                                            : 'bg-cream-50 text-pine-600 hover:bg-cream-100 border border-transparent'
+                                                        }`}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selectedLocations.includes(loc)}
+                                                        onChange={() => toggleLocation(loc)}
+                                                        className="sr-only"
+                                                    />
+                                                    <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${selectedLocations.includes(loc)
+                                                            ? 'bg-forest-600 border-forest-600'
+                                                            : 'border-pine-300'
+                                                        }`}>
+                                                        {selectedLocations.includes(loc) && (
+                                                            <CheckCircle size={12} className="text-white" />
+                                                        )}
+                                                    </div>
+                                                    <span className="truncate">{loc}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
                     {errors.location && <p className="text-red-500 text-sm mt-1">{errors.location}</p>}
+                    <p className="text-pine-400 text-xs mt-2">可選擇多個地點</p>
                 </div>
 
                 {/* Description */}

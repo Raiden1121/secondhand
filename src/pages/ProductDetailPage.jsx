@@ -407,7 +407,10 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
                                     建議見面地點
                                 </h3>
                                 <div className="flex flex-wrap gap-2">
-                                    {(product.location ? [product.location] : meetingPoints).map(point => (
+                                    {(product.location
+                                        ? product.location.split('、').filter(l => l.trim())
+                                        : meetingPoints
+                                    ).map(point => (
                                         <span key={point} className="bg-forest-50 text-forest-700 px-2 py-1 rounded-full text-xs border border-forest-100">
                                             {point}
                                         </span>

@@ -1,10 +1,10 @@
 export const mockProducts = [
-    { id: 1, title: 'iPhone 13 Pro', price: 18000, condition: '九成新', category: '3C', image: '📱', seller: '資工系 王同學', rating: 4.8, dept: '資工系' },
+    { id: 1, title: 'iPhone 13 Pro', price: 18000, condition: '九成新', category: '3C', image: '📱', seller: '資工系 王同學', rating: 4.8, dept: '資訊工程學系' },
     { id: 2, title: '微積分課本', price: 300, condition: '八成新', category: '教科書/筆記', image: '📚', seller: '數學系 李同學', rating: 5.0, dept: '數學系' },
-    { id: 3, title: '電風扇', price: 500, condition: '全新', category: '宿舍用品', image: '🌀', seller: '企管系 陳同學', rating: 4.5, dept: '企管系' },
-    { id: 4, title: '木吉他', price: 3500, condition: '九成新', category: '社團器材', image: '🎸', seller: '音樂社 張同學', rating: 4.9, dept: '中文系' },
-    { id: 5, title: '棉麻洋裝', price: 450, condition: '八成新', category: '服飾', image: '👗', seller: '經濟系 林同學', rating: 4.7, dept: '經濟系' },
-    { id: 6, title: '檯燈', price: 280, condition: '九成新', category: '宿舍用品', image: '💡', seller: '物理系 黃同學', rating: 4.6, dept: '物理系' },
+    { id: 3, title: '電風扇', price: 500, condition: '全新', category: '宿舍用品', image: '🌀', seller: '企管系 陳同學', rating: 4.5, dept: '企管學系' },
+    { id: 4, title: '木吉他', price: 3500, condition: '九成新', category: '社團器材', image: '🎸', seller: '音樂社 張同學', rating: 4.9, dept: '中國文學系' },
+    { id: 5, title: '棉麻洋裝', price: 450, condition: '八成新', category: '服飾', image: '👗', seller: '經濟系 林同學', rating: 4.7, dept: '經濟學系' },
+    { id: 6, title: '檯燈', price: 280, condition: '九成新', category: '宿舍用品', image: '💡', seller: '物理系 黃同學', rating: 4.6, dept: '物理學系' },
 ];
 
 export const mockNotifications = [
@@ -15,5 +15,115 @@ export const mockNotifications = [
 ];
 
 export const categories = ['全部', '3C', '服飾', '教科書/筆記', '宿舍用品', '社團器材', '食品', '其他'];
-export const departments = ['全部系所', '資工系', '數學系', '企管系', '中文系', '物理系', '化學系', '經濟系'];
-export const meetingPoints = ['中大湖', '女十四舍', '正門警衛室', '圖書館', '學生餐廳'];
+
+// College and department hierarchy for NCU
+export const colleges = [
+    { name: '全部學院', departments: [] },
+    {
+        name: '文學院',
+        departments: ['文學院學士班', '中國文學系', '英美語文學系', '法國語文學系']
+    },
+    {
+        name: '理學院',
+        departments: ['理學院學士班', '化學學系', '物理學系', '數學系', '光電科學與工程學系']
+    },
+    {
+        name: '管理學院',
+        departments: ['經濟學系', '企管學系', '財務金融學系', '資訊管理學系']
+    },
+    {
+        name: '地球科學學院',
+        departments: ['地球科學學士班', '地球科學學系', '太空科學與工程學系', '大氣科學學系']
+    },
+    {
+        name: '客家學院',
+        departments: ['客家語文暨社會科學學系']
+    },
+    {
+        name: '資訊電機學院',
+        departments: ['資訊電機學院學士班', '電機工程學系', '資訊工程學系', '通訊工程學系']
+    },
+    {
+        name: '生醫理工學院',
+        departments: ['生命科學學系', '生醫科學與工程學系']
+    },
+    {
+        name: '工學院',
+        departments: ['工學院學士班', '土木工程學系', '化學工程與材料工程學系', '機械工程學系']
+    },
+];
+
+// Flat list of all departments for profile dropdown
+export const departments = [
+    '選擇系所',
+    // 文學院
+    '文學院學士班', '中國文學系', '英美語文學系', '法國語文學系',
+    // 理學院
+    '理學院學士班', '化學學系', '物理學系', '數學系', '光電科學與工程學系',
+    // 管理學院
+    '經濟學系', '企管學系', '財務金融學系', '資訊管理學系',
+    // 地球科學學院
+    '地球科學學士班', '地球科學學系', '太空科學與工程學系', '大氣科學學系',
+    // 客家學院
+    '客家語文暨社會科學學系',
+    // 資訊電機學院
+    '資訊電機學院學士班', '電機工程學系', '資訊工程學系', '通訊工程學系',
+    // 生醫理工學院
+    '生命科學學系', '生醫科學與工程學系',
+    // 工學院
+    '工學院學士班', '土木工程學系', '化學工程與材料工程學系', '機械工程學系',
+];
+
+export const meetingPointCategories = [
+    {
+        name: '文學院',
+        locations: ['文學一館', '文學二館', '人文社會科學大樓']
+    },
+    {
+        name: '理學院',
+        locations: ['國鼎光電大樓', '鴻經館', '科學二館', '科學三館', '科學四館']
+    },
+    {
+        name: '工學院',
+        locations: ['工程一館', '工程三館', '工程四館', '工程五館']
+    },
+    {
+        name: '管理學院',
+        locations: ['管理一館 (志希館)', '管理二館']
+    },
+    {
+        name: '資電學院',
+        locations: ['工程二館', '工程五館']
+    },
+    {
+        name: '地科學院',
+        locations: ['科學一館', '科學二館', '科學三館', '科學四館']
+    },
+    {
+        name: '客家學院',
+        locations: ['客家學院大樓']
+    },
+    {
+        name: '生醫理工學院 / 太空及遙測',
+        locations: ['科學五館', '太空遙測中心']
+    },
+    {
+        name: '行政單位',
+        locations: ['行政大樓']
+    },
+    {
+        name: '圖書館',
+        locations: ['總圖書館', '中正圖書館', '國鼎圖書館']
+    },
+    {
+        name: '餐飲設施',
+        locations: ['松果餐廳', '松苑餐廳', '小木屋鬆餅']
+    },
+    {
+        name: '宿舍區',
+        locations: ['國際學生宿舍', '中大會館', '女1~4舍', '女十四舍', '男三舍', '男五舍', '男六舍', '男七舍', '男九舍', '男十一舍', '男十二舍', '男研舍']
+    }
+];
+
+// Flat list for backward compatibility
+export const meetingPoints = meetingPointCategories.flatMap(cat => cat.locations);

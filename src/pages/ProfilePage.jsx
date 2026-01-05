@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Star, Package, Plus, X, User, Mail, IdCard, ArrowRight, AlertTriangle, Heart, Camera, CheckCircle, AlertCircle } from 'lucide-react';
-import { categories } from '../data/mock';
+import React, { useState, useEffect, useRef } from 'react';
+import { Star, Package, Plus, X, User, Mail, IdCard, ArrowRight, AlertTriangle, Heart, Camera, CheckCircle, AlertCircle, ChevronDown, ChevronUp, MapPin } from 'lucide-react';
+import { categories, meetingPointCategories } from '../data/mock';
 import pineLan from '../assets/pineLan.png';
 import pineLogo from '../assets/pineLogo.png';
 import ImageCropper from '../components/ImageCropper';
@@ -65,6 +65,9 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
         condition: '全新',
         description: ''
     });
+    const [selectedLocations, setSelectedLocations] = useState([]);
+    const [showLocationPicker, setShowLocationPicker] = useState(false);
+    const [expandedLocationCategories, setExpandedLocationCategories] = useState({});
 
     const [products, setProducts] = useState([]);
     const [favorites, setFavorites] = useState([]);
@@ -249,6 +252,13 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
             condition: product.condition || '全新',
             description: product.description
         });
+        // Parse existing locations from the product
+        const existingLocations = product.location
+            ? product.location.split('、').filter(l => l.trim())
+            : [];
+        setSelectedLocations(existingLocations);
+        setShowLocationPicker(false);
+        setExpandedLocationCategories({});
         setEditingProduct(product);
     };
 
@@ -320,7 +330,7 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
             submitData.append('price', parseInt(formData.price));
             submitData.append('condition', formData.condition);
             submitData.append('description', formData.description);
-            submitData.append('location', editingProduct.location || ''); // Preserve location or add editable field later
+            submitData.append('location', selectedLocations.join('、'));
             submitData.append('status', editingProduct.status);
 
             // Handle Images (Unified List)
@@ -556,9 +566,12 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
                 if (onUserUpdate) {
                     onUserUpdate(updatedUser);
                 }
-                // Update local avatar preview
-                if (updatedUser.avatar) {
+                // Update local avatar preview (always set from response to ensure display is correct)
+                if (updatedUser.avatar && updatedUser.avatar.startsWith('/uploads/')) {
                     setAvatarPreview(`http://localhost:3000${updatedUser.avatar}`);
+                } else {
+                    // Reset avatar preview so it uses the user.avatar from props
+                    setAvatarPreview(null);
                 }
                 showToast('success', '個人資料已更新');
                 setIsEditingProfile(false);
@@ -847,6 +860,84 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
                                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                 ></textarea>
                             </div>
+
+                            {/* Location - Multi-select */}
+                            <div>
+                                <label className="block text-sm font-medium text-pine-600 mb-3">
+                                    建議面交地點
+                                </label>
+
+                                {/* Selected Locations Display */}
+                                <div
+                                    onClick={() => setShowLocationPicker(!showLocationPicker)}
+                                    className={`w-full p-3 border rounded-2xl text-pine-800 focus:outline-none transition bg-white/50 cursor-pointer flex items-center justify-between border-pine-200 ${showLocationPicker ? 'border-forest-400 ring-1 ring-forest-200' : ''}`}
+                                >
+                                    <div className="flex items-center gap-2 flex-wrap flex-1">
+                                        <MapPin size={18} className="text-pine-400 flex-shrink-0" />
+                                        {selectedLocations.length === 0 ? (
+                                            <span className="text-pine-400">點擊選擇面交地點...</span>
+                                        ) : (
+                                            <span className="text-pine-800">{selectedLocations.join('、')}</span>
+                                        )}
+                                    </div>
+                                    {showLocationPicker ? <ChevronUp size={18} className="text-pine-400" /> : <ChevronDown size={18} className="text-pine-400" />}
+                                </div>
+
+                                {/* Location Picker Dropdown */}
+                                {showLocationPicker && (
+                                    <div className="mt-2 border border-pine-200 rounded-2xl bg-white shadow-lg max-h-60 overflow-y-auto">
+                                        {meetingPointCategories.map((cat) => (
+                                            <div key={cat.name} className="border-b border-pine-100 last:border-b-0">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setExpandedLocationCategories(prev => ({
+                                                        ...prev,
+                                                        [cat.name]: !prev[cat.name]
+                                                    }))}
+                                                    className="w-full px-4 py-2 flex items-center justify-between text-left hover:bg-cream-50 transition text-sm"
+                                                >
+                                                    <span className="font-medium text-pine-700">{cat.name}</span>
+                                                    {expandedLocationCategories[cat.name] ? <ChevronUp size={14} className="text-pine-400" /> : <ChevronDown size={14} className="text-pine-400" />}
+                                                </button>
+                                                {expandedLocationCategories[cat.name] && (
+                                                    <div className="px-4 pb-2 grid grid-cols-2 gap-1">
+                                                        {cat.locations.map((loc) => (
+                                                            <label
+                                                                key={loc}
+                                                                className={`flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition text-xs ${selectedLocations.includes(loc)
+                                                                        ? 'bg-forest-100 text-forest-800 border border-forest-300'
+                                                                        : 'bg-cream-50 text-pine-600 hover:bg-cream-100 border border-transparent'
+                                                                    }`}
+                                                            >
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={selectedLocations.includes(loc)}
+                                                                    onChange={() => setSelectedLocations(prev =>
+                                                                        prev.includes(loc)
+                                                                            ? prev.filter(l => l !== loc)
+                                                                            : [...prev, loc]
+                                                                    )}
+                                                                    className="sr-only"
+                                                                />
+                                                                <div className={`w-3 h-3 rounded border flex items-center justify-center flex-shrink-0 ${selectedLocations.includes(loc)
+                                                                        ? 'bg-forest-600 border-forest-600'
+                                                                        : 'border-pine-300'
+                                                                    }`}>
+                                                                    {selectedLocations.includes(loc) && (
+                                                                        <CheckCircle size={10} className="text-white" />
+                                                                    )}
+                                                                </div>
+                                                                <span className="truncate">{loc}</span>
+                                                            </label>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                <p className="text-pine-400 text-xs mt-1">可選擇多個地點</p>
+                            </div>
                         </div>
 
                         {/* Footer Buttons */}
@@ -1027,16 +1118,53 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
                                             className={`w-full px-4 py-3 border rounded-xl text-stone-800 bg-white focus:outline-none focus:ring-4 transition-all duration-200 cursor-pointer appearance-none ${!profileFormData.department ? 'border-red-300 focus:border-red-500 focus:ring-red-500/10' : 'border-stone-200 focus:border-[#8B5A2B] hover:border-[#8B5A2B]/50 focus:ring-[#8B5A2B]/10'}`}
                                             value={profileFormData.department || ''}
                                             onChange={(e) => setProfileFormData({ ...profileFormData, department: e.target.value })}
+                                            style={{ maxHeight: '200px' }}
                                         >
                                             <option value="">選擇系所</option>
-                                            <option value="資工系">資工系</option>
-                                            <option value="資管系">資管系</option>
-                                            <option value="電機系">電機系</option>
-                                            <option value="企管系">企管系</option>
-                                            <option value="經濟系">經濟系</option>
-                                            <option value="英文系">英文系</option>
-                                            <option value="中文系">中文系</option>
-                                            <option value="其他">其他</option>
+                                            <optgroup label="文學院">
+                                                <option value="文學院學士班">文學院學士班</option>
+                                                <option value="中國文學系">中國文學系</option>
+                                                <option value="英美語文學系">英美語文學系</option>
+                                                <option value="法國語文學系">法國語文學系</option>
+                                            </optgroup>
+                                            <optgroup label="理學院">
+                                                <option value="理學院學士班">理學院學士班</option>
+                                                <option value="化學學系">化學學系</option>
+                                                <option value="物理學系">物理學系</option>
+                                                <option value="數學系">數學系</option>
+                                                <option value="光電科學與工程學系">光電科學與工程學系</option>
+                                            </optgroup>
+                                            <optgroup label="管理學院">
+                                                <option value="經濟學系">經濟學系</option>
+                                                <option value="企管學系">企管學系</option>
+                                                <option value="財務金融學系">財務金融學系</option>
+                                                <option value="資訊管理學系">資訊管理學系</option>
+                                            </optgroup>
+                                            <optgroup label="地球科學學院">
+                                                <option value="地球科學學士班">地球科學學士班</option>
+                                                <option value="地球科學學系">地球科學學系</option>
+                                                <option value="太空科學與工程學系">太空科學與工程學系</option>
+                                                <option value="大氣科學學系">大氣科學學系</option>
+                                            </optgroup>
+                                            <optgroup label="客家學院">
+                                                <option value="客家語文暨社會科學學系">客家語文暨社會科學學系</option>
+                                            </optgroup>
+                                            <optgroup label="資訊電機學院">
+                                                <option value="資訊電機學院學士班">資訊電機學院學士班</option>
+                                                <option value="電機工程學系">電機工程學系</option>
+                                                <option value="資訊工程學系">資訊工程學系</option>
+                                                <option value="通訊工程學系">通訊工程學系</option>
+                                            </optgroup>
+                                            <optgroup label="生醫理工學院">
+                                                <option value="生命科學學系">生命科學學系</option>
+                                                <option value="生醫科學與工程學系">生醫科學與工程學系</option>
+                                            </optgroup>
+                                            <optgroup label="工學院">
+                                                <option value="工學院學士班">工學院學士班</option>
+                                                <option value="土木工程學系">土木工程學系</option>
+                                                <option value="化學工程與材料工程學系">化學工程與材料工程學系</option>
+                                                <option value="機械工程學系">機械工程學系</option>
+                                            </optgroup>
                                         </select>
                                         <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
                                             <svg className="w-4 h-4 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
