@@ -2,11 +2,38 @@ import prisma from '../lib/prisma.js';
 
 export const getProducts = async (req, res) => {
     try {
+        const { sellerId, excludeUserId } = req.query;
+        const where = {};
+
+        if (sellerId) {
+            where.sellerId = parseInt(sellerId);
+        }
+
+        // Exclude current user's products on homepage
+        if (excludeUserId) {
+            where.sellerId = { not: parseInt(excludeUserId) };
+        }
+
         const products = await prisma.product.findMany({
-            include: { seller: { select: { name: true, department: true, avatar: true } } },
-            orderBy: { createdAt: 'desc' }
+            where,
+            include: {
+                seller: { select: { name: true, department: true, avatar: true } },
+                _count: { select: { favorites: true } }
+            },
+            orderBy: [
+                { reserved: 'asc' }, // Unreserved (false) first
+                { createdAt: 'desc' }
+            ]
         });
-        res.json(products);
+
+        // Format response to include favoritesCount at top level
+        const formattedProducts = products.map(p => ({
+            ...p,
+            favoritesCount: p._count?.favorites || 0,
+            _count: undefined
+        }));
+
+        res.json(formattedProducts);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -186,6 +213,33 @@ export const deleteProduct = async (req, res) => {
         });
 
         res.json({ message: 'Product deleted' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const toggleReserve = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const existingProduct = await prisma.product.findUnique({
+            where: { id: parseInt(id) }
+        });
+
+        if (!existingProduct) {
+            return res.status(404).json({ message: 'Product not found' });
+        }
+
+        if (existingProduct.sellerId !== req.user.id) {
+            return res.status(403).json({ message: 'Unauthorized' });
+        }
+
+        const product = await prisma.product.update({
+            where: { id: parseInt(id) },
+            data: { reserved: !existingProduct.reserved }
+        });
+
+        res.json(product);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

@@ -37,11 +37,19 @@ const ProductCard = ({ product, onClick }) => {
                 {getImage()}
             </div>
             <div className="p-3 md:p-4">
-                <h3 className="font-medium text-pine-900 truncate text-sm md:text-base">{product.title}</h3>
+                <div className="flex items-center justify-between">
+                    <h3 className="font-medium text-pine-900 truncate text-sm md:text-base flex-1">{product.title}</h3>
+                    <span className="text-xs text-pine-400 flex-shrink-0 ml-2">{product.condition || (product.status === 'active' ? '販售中' : '已售出')}</span>
+                </div>
                 <p className="text-xs text-pine-500 mt-1">{product.category}</p>
                 <div className="flex items-center justify-between mt-3">
                     <span className="text-base md:text-lg font-semibold text-pine-800">NT$ {product.price?.toLocaleString?.() || product.price}</span>
-                    <span className="text-xs text-pine-400">{product.condition || (product.status === 'active' ? '販售中' : '已售出')}</span>
+                    <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${product.reserved
+                        ? 'bg-red-100 text-red-600'
+                        : 'bg-green-100 text-green-600'
+                        }`}>
+                        {product.reserved ? '已保留' : '尚未保留'}
+                    </span>
                 </div>
             </div>
         </div>

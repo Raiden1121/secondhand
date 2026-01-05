@@ -35,6 +35,7 @@ model Product {
   images      String
   category    String
   status      String    @default("active")
+  reserved    Boolean   @default(false)
   sellerId    Int
   seller      User      @relation(fields: [sellerId], references: [id])
   location    String?

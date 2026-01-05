@@ -23,7 +23,7 @@ export const getConversations = async (req, res) => {
 
         // Format for frontend with unread count
         const formattedChats = await Promise.all(chats.map(async chat => {
-            const otherUser = chat.participants.find(p => p.id !== userId) || { name: 'Unknown', avatar: null };
+            const otherUser = chat.participants.find(p => p.id !== userId) || { id: null, name: 'Unknown', avatar: null, department: null };
             const lastMsg = chat.messages[0];
 
             // Count unread messages
@@ -37,6 +37,7 @@ export const getConversations = async (req, res) => {
 
             return {
                 id: chat.id,
+                partnerId: otherUser.id, // Add partner ID for navigation to seller page
                 name: otherUser.name || 'Unknown',
                 avatar: otherUser.avatar,
                 department: otherUser.department,

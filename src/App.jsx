@@ -9,6 +9,7 @@ import PostPage from './pages/PostPage';
 import ProfilePage from './pages/ProfilePage';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
+import SellerPage from './pages/SellerPage';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('landing');
@@ -271,6 +272,7 @@ function App() {
               setProductBackPage({ type: 'profile' });
               setCurrentPage(`product-${productId}`);
             }}
+            onUserUpdate={setUser}
           />
         )}
         {currentPage.startsWith('product-') && (
@@ -281,6 +283,12 @@ function App() {
             onNavigateToChat={handleNavigateToChat}
             productBackPage={productBackPage}
             onClearBackPage={() => setProductBackPage(null)}
+          />
+        )}
+        {currentPage.startsWith('seller-') && (
+          <SellerPage
+            sellerId={currentPage.split('-')[1]}
+            setCurrentPage={setCurrentPage}
           />
         )}
       </div>

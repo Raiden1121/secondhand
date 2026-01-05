@@ -342,17 +342,22 @@ const ChatPage = ({ chats, onChatRead, resetKey, onRefreshChats, initialChatId, 
                         >
                             <ArrowLeft size={22} />
                         </button>
-                        <div className="w-10 h-10 bg-cream-100 rounded-full flex items-center justify-center text-lg text-pine-600 border border-white shadow-sm overflow-hidden">
-                            {renderAvatar(activeChat.avatar)}
-                        </div>
-                        <div className="flex-1">
-                            <h3 className="font-medium text-pine-900">{activeChat.name}</h3>
-                            <p className="text-xs text-pine-500">{activeChat.department}</p>
+                        <div
+                            onClick={() => activeChat.partnerId && setCurrentPage(`seller-${activeChat.partnerId}`)}
+                            className="flex items-center gap-3 flex-1 cursor-pointer hover:opacity-80 transition"
+                        >
+                            <div className="w-10 h-10 bg-cream-100 rounded-full flex items-center justify-center text-lg text-pine-600 border border-white shadow-sm overflow-hidden">
+                                {renderAvatar(activeChat.avatar)}
+                            </div>
+                            <div>
+                                <h3 className="font-medium text-pine-900">{activeChat.name}</h3>
+                                <p className="text-xs text-pine-500">{activeChat.department}</p>
+                            </div>
                         </div>
                         <div className="flex items-center gap-1 text-pine-400">
-                            <button className="p-2 hover:bg-pine-50 rounded-full transition">
+                            {/* <button className="p-2 hover:bg-pine-50 rounded-full transition">
                                 <Phone size={20} />
-                            </button>
+                            </button> */}
                             <button className="p-2 hover:bg-pine-50 rounded-full transition">
                                 <MoreVertical size={20} />
                             </button>

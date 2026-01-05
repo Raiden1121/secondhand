@@ -48,12 +48,13 @@
 ### 📦 商品 (Product)
 | 方法 | 路徑 | 說明 |
 |------|------|------|
-| GET | `/api/products` | 取得所有商品 |
+| GET | `/api/products` | 取得所有商品 (支援 `sellerId`, `excludeUserId` 參數) |
 | GET | `/api/products/:id` | 取得單一商品詳情 |
 | POST | `/api/products` | 上架新商品 (需登入) |
 | GET | `/api/products/my` | 取得我的商品 (需登入) |
 | PUT | `/api/products/:id` | 更新商品 (需登入) |
 | DELETE | `/api/products/:id` | 刪除商品 (需登入) |
+| PATCH | `/api/products/:id/reserve` | 切換商品保留狀態 (需登入) |
 
 ### 💬 聊天 (Chat)
 | 方法 | 路徑 | 說明 |
@@ -63,6 +64,7 @@
 | POST | `/api/chat/initiate` | 開始新對話 |
 | POST | `/api/chat/:chatId/messages` | 發送訊息 (支援圖片) |
 | PUT | `/api/chat/:chatId/read` | 標記對話已讀 |
+| DELETE | `/api/chat/:chatId` | 刪除對話 |
 
 ### ❤️ 收藏 (Favorite)
 | 方法 | 路徑 | 說明 |
@@ -147,12 +149,18 @@ npm run dev
 - [x] 商品檢舉功能
 - [x] 個人資料編輯 (頭像上傳、裁切功能)
 - [x] 響應式設計 (RWD)
-- [x] 商品詳情頁面優化 (固定視窗、比例縮放)
+- [x] 商品詳情頁面優化 (固定視窗、比例縮放、雙擊放大)
 - [x] 智能返回導航 (記住來源頁面：聊天室/個人頁面/首頁)
 - [x] URL Hash 導航 (分享連結可直接開啟商品頁面)
+- [x] 賣家頁面 (SellerPage) - 查看賣家資訊與商品
+- [x] 商品保留功能 (暫保留/取消保留)
+- [x] 商品狀態標籤 (已保留/尚未保留)
+- [x] 商品排序功能 (價格、收藏數、名稱)
+- [x] 首頁隱藏自己的商品
+- [x] 聊天室點擊對方頭像跳轉到賣家頁面
+- [x] 刪除對話功能
 
 ### 🚧 進行中 / 待開發
-- [ ] 商品搜尋與篩選功能
 - [ ] 管理員後台
 - [ ] 交易狀態追蹤
 - [ ] 推播通知

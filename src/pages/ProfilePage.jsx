@@ -56,7 +56,7 @@ const SortablePhoto = ({ id, url, index, onRemove }) => {
     );
 };
 
-const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct }) => {
+const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUserUpdate }) => {
     const [editingProduct, setEditingProduct] = useState(null);
     const [formData, setFormData] = useState({
         title: '',
@@ -551,8 +551,17 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct }) =>
             });
 
             if (response.ok) {
-                // Refresh logic
-                window.location.reload();
+                const updatedUser = await response.json();
+                // Update user state directly instead of reloading
+                if (onUserUpdate) {
+                    onUserUpdate(updatedUser);
+                }
+                // Update local avatar preview
+                if (updatedUser.avatar) {
+                    setAvatarPreview(`http://localhost:3000${updatedUser.avatar}`);
+                }
+                showToast('success', '個人資料已更新');
+                setIsEditingProfile(false);
             } else {
                 alert('更新失敗');
             }
@@ -560,7 +569,6 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct }) =>
             console.error('Error updating profile:', error);
             alert('更新發生錯誤');
         }
-        setIsEditingProfile(false);
     };
 
     const handleDelete = () => {
@@ -644,7 +652,11 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct }) =>
                         <p className="text-center text-pine-400 py-4 text-sm">目前沒有上架的物品</p>
                     ) : (
                         products.map(product => (
-                            <div key={product.id} className="flex items-center gap-4 p-4 border border-pine-100 rounded-xl hover:bg-cream-50 transition cursor-pointer">
+                            <div
+                                key={product.id}
+                                onClick={() => onNavigateToProduct ? onNavigateToProduct(product.id) : setCurrentPage(`product-${product.id}`)}
+                                className="flex items-center gap-4 p-4 border border-pine-100 rounded-xl hover:bg-cream-50 transition cursor-pointer"
+                            >
                                 <div className="w-16 h-16 bg-cream-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 text-pine-600 overflow-hidden">
                                     {getProductImage(product)}
                                 </div>
@@ -653,8 +665,11 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct }) =>
                                     <p className="text-sm text-pine-500 mt-1">NT$ {product.price?.toLocaleString()}</p>
                                 </div>
                                 <button
-                                    onClick={() => handleEdit(product)}
-                                    className="text-sm text-pine-600 hover:text-pine-800 flex-shrink-0 hover:underline"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEdit(product);
+                                    }}
+                                    className="text-sm text-white bg-pine-700 hover:bg-pine-800 px-4 py-2 rounded-lg flex-shrink-0 transition"
                                 >
                                     編輯
                                 </button>
@@ -716,7 +731,7 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct }) =>
                     <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
                         {/* Header */}
                         <div className="flex items-center justify-between p-4 border-b border-pine-100">
-                            <h2 className="text-xl font-light text-pine-900">編輯物品</h2>
+                            <h2 className="text-xl font-medium text-pine-900">編輯物品</h2>
                             <button
                                 onClick={handleClose}
                                 className="p-2 hover:bg-cream-50 rounded-full transition"
@@ -848,11 +863,34 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct }) =>
                         <div className="p-6 pt-0 flex gap-3">
                             <button
                                 onClick={handleSave}
-                                className="flex-1 bg-pine-800 text-white py-4 rounded-2xl font-medium hover:bg-pine-700 transition shadow-md hover:shadow-lg transform active:scale-[0.99]"
+                                className="flex-1 bg-green-600 text-white py-4 rounded-2xl font-medium hover:bg-green-700 transition shadow-md hover:shadow-lg transform active:scale-[0.99]"
                             >
-                                保留
+                                儲存
                             </button>
 
+                        </div>
+                        <div className="p-6 pt-0 flex gap-3">
+                            <button
+                                onClick={async () => {
+                                    try {
+                                        const token = localStorage.getItem('token');
+                                        const response = await fetch(`http://localhost:3000/api/products/${editingProduct.id}/reserve`, {
+                                            method: 'PATCH',
+                                            headers: { 'Authorization': `Bearer ${token}` }
+                                        });
+                                        if (response.ok) {
+                                            const updatedProduct = await response.json();
+                                            setProducts(prev => prev.map(p => p.id === editingProduct.id ? updatedProduct : p));
+                                            setEditingProduct(null); // Close modal and return to profile
+                                        }
+                                    } catch (error) {
+                                        console.error('Error toggling reserve:', error);
+                                    }
+                                }}
+                                className="flex-1 bg-pine-800 text-white py-4 rounded-2xl font-medium hover:bg-pine-700 transition shadow-md hover:shadow-lg transform active:scale-[0.99]"
+                            >
+                                {editingProduct.reserved ? '取消保留' : '暫保留'}
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -933,7 +971,7 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct }) =>
                                         accept="image/*"
                                         onChange={handleFileSelect}
                                     />
-                                    <p className="text-xs text-stone-500 mt-2">點擊更換頭像 (支援 jpg, png)</p>
+                                    <p className="text-xs text-stone-500 mt-2">點擊更換頭像</p>
                                 </div>
 
                                 {/* Name Field */}

@@ -14,6 +14,7 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
     const [isToastExiting, setIsToastExiting] = useState(false);
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const [showZoomModal, setShowZoomModal] = useState(false);
+    const [sellerAvatarError, setSellerAvatarError] = useState(false);
 
     useEffect(() => {
         const fetchProduct = async () => {
@@ -360,9 +361,21 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
                             </div>
 
                             <div className="border-t border-pine-100 pt-3 flex items-center justify-between">
-                                <div className="flex items-center gap-3">
+                                <div
+                                    className="flex items-center gap-3 cursor-pointer hover:bg-cream-50 p-2 -m-2 rounded-lg transition"
+                                    onClick={() => setCurrentPage(`seller-${product.sellerId}`)}
+                                >
                                     <div className="w-8 h-8 bg-cream-100 rounded-full flex items-center justify-center text-base overflow-hidden">
-                                        👤
+                                        {product.seller?.avatar && product.seller.avatar.trim() !== '' && !sellerAvatarError ? (
+                                            <img
+                                                src={`http://localhost:3000${product.seller.avatar}`}
+                                                alt={product.seller.name}
+                                                className="w-full h-full object-cover"
+                                                onError={() => setSellerAvatarError(true)}
+                                            />
+                                        ) : (
+                                            <span className="text-lg">👤</span>
+                                        )}
                                     </div>
                                     <div>
                                         <span className="text-pine-800 font-medium block text-sm">{product.seller?.name || '未知賣家'}</span>
@@ -503,7 +516,7 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
                     <img
                         src={`http://localhost:3000${currentImage}`}
                         alt={product.title}
-                        className="max-w-[90vw] max-h-[90vh] object-contain"
+                        className="max-w-[95vw] max-h-[95vh] min-w-[60vw] min-h-[60vh] object-contain"
                         onClick={(e) => e.stopPropagation()}
                     />
 
