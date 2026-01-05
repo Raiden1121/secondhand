@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, X, CheckCircle, AlertCircle } from 'lucide-react';
 import { categories } from '../data/mock';
+import ImageCropper from '../components/ImageCropper';
+import heic2any from 'heic2any';
 import {
     DndContext,
     closestCenter,
@@ -64,6 +66,10 @@ const PostPage = ({ setCurrentPage }) => {
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
     const [toast, setToast] = useState(null);
+    const [showCropper, setShowCropper] = useState(false);
+    const [imageToCrop, setImageToCrop] = useState(null);
+    const [pendingFiles, setPendingFiles] = useState([]);
+    const [isConverting, setIsConverting] = useState(false);
     const fileInputRef = useRef(null);
 
     // Auto-hide toast after 3 seconds
@@ -78,7 +84,7 @@ const PostPage = ({ setCurrentPage }) => {
         setToast({ type, message });
     };
 
-    const handleImageSelect = (e) => {
+    const handleImageSelect = async (e) => {
         const files = Array.from(e.target.files);
         if (files.length === 0) return;
 
@@ -88,13 +94,102 @@ const PostPage = ({ setCurrentPage }) => {
             return;
         }
 
-        // Use URL.createObjectURL for immediate preview
-        const newPreviews = files.map(file => URL.createObjectURL(file));
-        setImages(prev => [...prev, ...files]);
-        setPreviews(prev => [...prev, ...newPreviews]);
+        setIsConverting(true);
 
-        // Reset file input so the same file can be selected again
+        try {
+            const processedFiles = [];
+
+            for (const file of files) {
+                // Check if file is HEIC/HEIF
+                const isHeic = file.type === 'image/heic' ||
+                    file.type === 'image/heif' ||
+                    file.name.toLowerCase().endsWith('.heic') ||
+                    file.name.toLowerCase().endsWith('.heif');
+
+                if (isHeic) {
+                    // Convert HEIC to JPEG
+                    const convertedBlob = await heic2any({
+                        blob: file,
+                        toType: 'image/jpeg',
+                        quality: 0.9
+                    });
+
+                    const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+                    const convertedFile = new File(
+                        [blob],
+                        file.name.replace(/\.heic$/i, '.jpg').replace(/\.heif$/i, '.jpg'),
+                        { type: 'image/jpeg' }
+                    );
+
+                    processedFiles.push(convertedFile);
+                } else {
+                    processedFiles.push(file);
+                }
+            }
+
+            // Queue files for cropping
+            if (processedFiles.length > 0) {
+                setPendingFiles(processedFiles);
+                setImageToCrop(URL.createObjectURL(processedFiles[0]));
+                setShowCropper(true);
+            }
+        } catch (error) {
+            console.error('Error processing images:', error);
+            showToast('error', '圖片處理失敗，請重試');
+        } finally {
+            setIsConverting(false);
+        }
+
+        // Reset file input
         e.target.value = '';
+    };
+
+    const handleCropComplete = (croppedBlob) => {
+        // Create file from blob
+        const croppedFile = new File(
+            [croppedBlob],
+            `cropped_${Date.now()}.jpg`,
+            { type: 'image/jpeg' }
+        );
+
+        // Add to images
+        setImages(prev => [...prev, croppedFile]);
+        setPreviews(prev => [...prev, URL.createObjectURL(croppedBlob)]);
+
+        // Revoke the crop source URL
+        if (imageToCrop) {
+            URL.revokeObjectURL(imageToCrop);
+        }
+
+        // Process next file in queue
+        const remainingFiles = pendingFiles.slice(1);
+        if (remainingFiles.length > 0) {
+            setPendingFiles(remainingFiles);
+            setImageToCrop(URL.createObjectURL(remainingFiles[0]));
+        } else {
+            // All done
+            setShowCropper(false);
+            setImageToCrop(null);
+            setPendingFiles([]);
+        }
+    };
+
+    const handleCancelCrop = () => {
+        // Revoke current URL
+        if (imageToCrop) {
+            URL.revokeObjectURL(imageToCrop);
+        }
+
+        // Skip current and process next, or close if no more
+        const remainingFiles = pendingFiles.slice(1);
+        if (remainingFiles.length > 0) {
+            setPendingFiles(remainingFiles);
+            setImageToCrop(URL.createObjectURL(remainingFiles[0]));
+        } else {
+            setShowCropper(false);
+            setImageToCrop(null);
+            setPendingFiles([]);
+        }
     };
 
     const removeImage = (index) => {
@@ -222,7 +317,7 @@ const PostPage = ({ setCurrentPage }) => {
                         type="file"
                         ref={fileInputRef}
                         onChange={handleImageSelect}
-                        accept="image/*"
+                        accept="image/*,.heic,.heif"
                         multiple
                         className="hidden"
                     />
@@ -245,13 +340,25 @@ const PostPage = ({ setCurrentPage }) => {
 
                                 {previews.length < 5 && (
                                     <div
-                                        onClick={() => fileInputRef.current?.click()}
-                                        className="aspect-square border-2 border-dashed border-pine-200 rounded-xl flex flex-col items-center justify-center hover:bg-cream-50 cursor-pointer transition group"
+                                        onClick={() => !isConverting && fileInputRef.current?.click()}
+                                        className={`aspect-square border-2 border-dashed border-pine-200 rounded-xl flex flex-col items-center justify-center transition group ${isConverting
+                                                ? 'opacity-50 cursor-not-allowed'
+                                                : 'hover:bg-cream-50 cursor-pointer'
+                                            }`}
                                     >
-                                        <Plus size={24} className="text-pine-300 group-hover:text-pine-500 transition" />
-                                        <p className="text-pine-400 mt-1 text-xs group-hover:text-pine-600">
-                                            {previews.length === 0 ? '上傳照片' : '新增'}
-                                        </p>
+                                        {isConverting ? (
+                                            <>
+                                                <div className="w-6 h-6 border-2 border-pine-300 border-t-pine-600 rounded-full animate-spin" />
+                                                <p className="text-pine-400 mt-1 text-xs">處理中...</p>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Plus size={24} className="text-pine-300 group-hover:text-pine-500 transition" />
+                                                <p className="text-pine-400 mt-1 text-xs group-hover:text-pine-600">
+                                                    {previews.length === 0 ? '上傳照片' : '新增'}
+                                                </p>
+                                            </>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -378,6 +485,17 @@ const PostPage = ({ setCurrentPage }) => {
                     to { opacity: 1; transform: translateX(-50%) translateY(0); }
                 }
             `}</style>
+
+            {/* Image Cropper Modal */}
+            {showCropper && imageToCrop && (
+                <ImageCropper
+                    imageSrc={imageToCrop}
+                    onCancel={handleCancelCrop}
+                    onCropComplete={handleCropComplete}
+                    shape="square"
+                    title={`調整照片 (${images.length + 1}/${images.length + pendingFiles.length})`}
+                />
+            )}
         </div>
     );
 };

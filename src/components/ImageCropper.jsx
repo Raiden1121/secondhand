@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, Check, ZoomIn, ZoomOut, Move } from 'lucide-react';
 
-const ImageCropper = ({ imageSrc, onCancel, onCropComplete }) => {
+const ImageCropper = ({ imageSrc, onCancel, onCropComplete, shape = 'circle', title = '調整頭像' }) => {
     const [zoom, setZoom] = useState(0.5);
     const [minZoom, setMinZoom] = useState(0.1);
     const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -46,39 +46,23 @@ const ImageCropper = ({ imageSrc, onCancel, onCropComplete }) => {
 
     const handleCrop = () => {
         const canvas = document.createElement('canvas');
-        const size = 300; // Final avatar size
+        const size = 300; // Final size
         canvas.width = size;
         canvas.height = size;
         const ctx = canvas.getContext('2d');
 
-        // Draw Logic
-        // The container is, say, 300x300. The mask is centered.
-        // The image is transformed by pan (x,y) and zoom.
-        // We need to map the visible pixels in the circle to the canvas.
-
-        // Our container is fixed size, e.g., 300px.
-        // Center of container is (150, 150).
-        // Image center is initially at (150, 150) if we center it.
-        // Pan shifts the image.
-
-        // Let's assume the DOM structure:
-        // Container (300x300)
-        //   Image (Transform: translate(pan.x, pan.y) scale(zoom))
-        //   Mask (300x300, hole in middle)
-
-        // Start simple:
-        const img = imageRef.current;
-
-        // Calculate the source rectangle from the image to draw onto the canvas.
-        // It's often easier to draw the image onto the canvas with the same transforms.
-
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, 0, size, size);
 
-        // Clip to circle
-        ctx.beginPath();
-        ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
-        ctx.clip();
+        // Clip based on shape
+        if (shape === 'circle') {
+            ctx.beginPath();
+            ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+            ctx.clip();
+        }
+        // For square, no clip needed as canvas is already square
+
+        const img = imageRef.current;
 
         // Draw image
         // We need to translate/scale exactly as seen on screen.
@@ -112,7 +96,7 @@ const ImageCropper = ({ imageSrc, onCancel, onCropComplete }) => {
         <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex flex-col items-center justify-center p-4">
             <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-scaleIn">
                 <div className="p-4 border-b border-gray-100 flex justify-between items-center">
-                    <h3 className="font-medium text-gray-800">調整頭像</h3>
+                    <h3 className="font-medium text-gray-800">{title}</h3>
                     <button onClick={onCancel} className="p-2 hover:bg-gray-100 rounded-full transition">
                         <X size={20} className="text-gray-500" />
                     </button>
@@ -148,13 +132,24 @@ const ImageCropper = ({ imageSrc, onCancel, onCropComplete }) => {
                         <div
                             className="absolute inset-0 pointer-events-none"
                             style={{
-                                background: 'radial-gradient(circle, transparent 150px, rgba(0,0,0,0.5) 151px)'
+                                background: shape === 'circle'
+                                    ? 'radial-gradient(circle, transparent 150px, rgba(0,0,0,0.5) 151px)'
+                                    : 'none'
                             }}
-                        ></div>
+                        >
+                            {shape === 'square' && (
+                                <>
+                                    {/* Semi-transparent overlay with square hole */}
+                                    <div className="absolute inset-0 bg-black/50" style={{
+                                        clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%, 0 0, 10px 10px, 10px calc(100% - 10px), calc(100% - 10px) calc(100% - 10px), calc(100% - 10px) 10px, 10px 10px)'
+                                    }} />
+                                </>
+                            )}
+                        </div>
 
-                        {/* Circle Border Highlight */}
+                        {/* Border Highlight */}
                         <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                            <div className="w-[300px] h-[300px] rounded-full border-2 border-white/50 shadow-sm"></div>
+                            <div className={`w-[280px] h-[280px] border-2 border-white/50 shadow-sm ${shape === 'circle' ? 'rounded-full' : 'rounded-lg'}`}></div>
                         </div>
                     </div>
 
@@ -165,8 +160,8 @@ const ImageCropper = ({ imageSrc, onCancel, onCropComplete }) => {
                             <input
                                 type="range"
                                 min={minZoom}
-                                max="1.5"
-                                step="0.01"
+                                max="1.0"
+                                step="0.005"
                                 value={zoom}
                                 onChange={(e) => setZoom(parseFloat(e.target.value))}
                                 className="flex-1 accent-pine-600 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"

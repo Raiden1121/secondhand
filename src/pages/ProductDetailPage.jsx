@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, Star, MapPin, Flag, ArrowLeft, CheckCircle, AlertCircle, Share2 } from 'lucide-react';
+import { Heart, Star, MapPin, Flag, ArrowLeft, CheckCircle, AlertCircle, Share2, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { meetingPoints } from '../data/mock';
 
 const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigateToChat, productBackPage, onClearBackPage }) => {
@@ -12,6 +12,8 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
     const [submitting, setSubmitting] = useState(false);
     const [toast, setToast] = useState(null);
     const [isToastExiting, setIsToastExiting] = useState(false);
+    const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+    const [showZoomModal, setShowZoomModal] = useState(false);
 
     useEffect(() => {
         const fetchProduct = async () => {
@@ -197,7 +199,14 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
     if (typeof images === 'string') {
         try { images = JSON.parse(images); } catch { images = []; }
     }
-    const coverImage = images && images.length > 0 ? images[0] : null;
+    const currentImage = images && images.length > 0 ? images[selectedImageIndex] : null;
+
+    // Double click handler for zoom
+    const handleDoubleClick = () => {
+        if (currentImage) {
+            setShowZoomModal(true);
+        }
+    };
 
     const reportReasons = [
         '商品資訊不實',
@@ -221,21 +230,19 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
 
             <div className="max-w-2xl mx-auto h-full flex flex-col">
                 <div className="bg-white rounded-t-3xl shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
-                    {/* Image Section - 40% height with back button overlay */}
-                    <div className="h-[38%] bg-cream-50 flex items-center justify-center text-9xl overflow-hidden flex-shrink-0 relative">
+                    {/* Image Section - flexible height based on viewport */}
+                    <div className="min-h-[35%] max-h-[50%] bg-cream-50 flex flex-col overflow-hidden flex-shrink-0 relative">
                         {/* Back Button - Absolutely positioned */}
                         <button
                             onClick={() => {
                                 if (productBackPage) {
                                     if (productBackPage.type === 'chat' && productBackPage.chatId) {
-                                        // Navigate back to chat
                                         if (onNavigateToChat) {
                                             onNavigateToChat(productBackPage.chatId);
                                         } else {
                                             setCurrentPage('chat');
                                         }
                                     } else if (productBackPage.type === 'profile') {
-                                        // Navigate back to profile
                                         setCurrentPage('profile');
                                     }
                                     if (onClearBackPage) onClearBackPage();
@@ -248,15 +255,68 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
                         >
                             <ArrowLeft size={20} />
                         </button>
-                        {coverImage ? (
-                            <img src={`http://localhost:3000${coverImage}`} alt={product.title} className="w-full h-full object-contain p-4" />
-                        ) : (
-                            <span className="text-pine-200">📦</span>
+
+                        {/* Main Image Area */}
+                        <div
+                            className="flex-1 flex items-center justify-center min-h-0 cursor-pointer"
+                            onDoubleClick={handleDoubleClick}
+                        >
+                            {currentImage ? (
+                                <img
+                                    src={`http://localhost:3000${currentImage}`}
+                                    alt={product.title}
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <span className="text-pine-200 text-9xl">📦</span>
+                            )}
+                        </div>
+
+                        {/* Image Counter Dots - on main image */}
+                        {images && images.length > 1 && (
+                            <div className="absolute bottom-20 md:bottom-24 left-1/2 -translate-x-1/2 flex gap-1.5 z-10 bg-black/30 backdrop-blur-sm px-3 py-1.5 rounded-full mb-2">
+                                {images.map((_, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => setSelectedImageIndex(idx)}
+                                        className={`w-2 h-2 rounded-full transition-all ${idx === selectedImageIndex
+                                            ? 'bg-white w-4'
+                                            : 'bg-white/50 hover:bg-white/70'
+                                            }`}
+                                    />
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Thumbnail Strip */}
+                        {images && images.length > 1 && (
+                            <div className="h-14 sm:h-16 md:h-20 bg-white/80 backdrop-blur-sm border-t border-pine-100 flex-shrink-0">
+                                <div className="h-full overflow-x-auto scrollbar-hide">
+                                    <div className="h-full flex gap-1.5 md:gap-5 px-2 py-1.5">
+                                        {images.map((img, idx) => (
+                                            <button
+                                                key={idx}
+                                                onClick={() => setSelectedImageIndex(idx)}
+                                                className={`h-full aspect-square rounded-lg overflow-hidden flex-shrink-0 transition-all ${idx === selectedImageIndex
+                                                    ? 'ring-2 ring-pine-800 ring-offset-1'
+                                                    : 'opacity-60 hover:opacity-100'
+                                                    }`}
+                                            >
+                                                <img
+                                                    src={`http://localhost:3000${img}`}
+                                                    alt={`${product.title} ${idx + 1}`}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
                         )}
                     </div>
 
-                    {/* Details Section - 63% height, flex column */}
-                    <div className="h-[59%] p-4 md:p-6 pb-16 flex flex-col min-h-0">
+                    {/* Details Section - scrollable flex column */}
+                    <div className="flex-1 p-4 md:p-6 pb-20 flex flex-col min-h-0 overflow-y-auto">
                         {/* Header Info - Fixed */}
                         <div className="flex-shrink-0 space-y-2">
                             <div>
@@ -316,10 +376,10 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
                             </div>
                         </div>
 
-                        {/* Description - Flexible Loop Scroll */}
-                        <div className="flex-1 min-h-0 border-t border-pine-100 mt-3 pt-3 flex flex-col">
+                        {/* Description - Limited height with scroll */}
+                        <div className="flex-1 min-h-0 border-t border-pine-100 mt-3 pt-3 flex flex-col max-h-56">
                             <h3 className="text-sm font-medium text-pine-600 mb-2 flex-shrink-0">關於這件物品</h3>
-                            <div className="flex-1 overflow-y-auto overflow-x-hidden pr-2 border border-pine-100 rounded-lg p-3">
+                            <div className="flex-1 overflow-y-auto overflow-x-hidden pr-2 border border-pine-100 rounded-lg p-2">
                                 <p className="text-pine-700 leading-relaxed whitespace-pre-line break-all text-sm">
                                     {product.description}
                                 </p>
@@ -342,7 +402,7 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
                                 </div>
                             </div>
 
-                            <div className="flex gap-3">
+                            <div className="flex gap-3 pt-6">
                                 <button
                                     onClick={handleStartChat}
                                     className="flex-1 bg-pine-800 text-white py-3 rounded-2xl font-medium hover:bg-pine-700 transition shadow-md hover:shadow-lg transform active:scale-[0.98] text-sm"
@@ -402,6 +462,63 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
                             </button>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* Zoom Modal */}
+            {showZoomModal && currentImage && (
+                <div
+                    className="fixed inset-0 bg-black/95 z-[100] flex items-center justify-center"
+                    onClick={() => setShowZoomModal(false)}
+                >
+                    {/* Close Button */}
+                    <button
+                        onClick={() => setShowZoomModal(false)}
+                        className="absolute top-4 right-4 w-10 h-10 bg-white/20 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-white/30 transition z-10"
+                    >
+                        <X size={24} />
+                    </button>
+
+                    {/* Image Counter */}
+                    {images && images.length > 1 && (
+                        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+                            {selectedImageIndex + 1} / {images.length}
+                        </div>
+                    )}
+
+                    {/* Previous Button */}
+                    {images && images.length > 1 && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedImageIndex(prev => prev === 0 ? images.length - 1 : prev - 1);
+                            }}
+                            className="absolute left-4 w-12 h-12 bg-white/20 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-white/30 transition"
+                        >
+                            <ChevronLeft size={28} />
+                        </button>
+                    )}
+
+                    {/* Zoomed Image */}
+                    <img
+                        src={`http://localhost:3000${currentImage}`}
+                        alt={product.title}
+                        className="max-w-[90vw] max-h-[90vh] object-contain"
+                        onClick={(e) => e.stopPropagation()}
+                    />
+
+                    {/* Next Button */}
+                    {images && images.length > 1 && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedImageIndex(prev => prev === images.length - 1 ? 0 : prev + 1);
+                            }}
+                            className="absolute right-4 w-12 h-12 bg-white/20 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-white/30 transition"
+                        >
+                            <ChevronRight size={28} />
+                        </button>
+                    )}
                 </div>
             )}
         </div>
