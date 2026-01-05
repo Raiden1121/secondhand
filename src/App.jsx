@@ -10,6 +10,7 @@ import ProfilePage from './pages/ProfilePage';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import SellerPage from './pages/SellerPage';
+import RatingPage from './pages/RatingPage';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('landing');
@@ -197,6 +198,60 @@ function App() {
     }
   };
 
+  const confirmPurchase = async (transactionId) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await fetch(`http://localhost:3000/api/transactions/${transactionId}/confirm`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        // Refresh notifications to get the rating prompts
+        await fetchNotifications();
+        return true;
+      } else {
+        const err = await response.json();
+        console.error('Error confirming purchase:', err.message);
+        // If already processed, we still might want to treat it as "done" for the UI part, 
+        // but for now let's return false and handle specific cases if needed.
+        // Actually if it's "Already processed", we should probably return true to let it resolve in UI?
+        // Let's just return false and let the caller decide or just keep it simple.
+        return false;
+      }
+    } catch (error) {
+      console.error('Error confirming purchase:', error);
+      return false;
+    }
+  };
+
+  const cancelPurchase = async (transactionId) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await fetch(`http://localhost:3000/api/transactions/${transactionId}/cancel`, {
+        method: 'PATCH',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        fetchNotifications();
+      } else {
+        const err = await response.json();
+        console.error('Error cancelling purchase:', err.message);
+      }
+    } catch (error) {
+      console.error('Error cancelling purchase:', error);
+    }
+  };
+
+  const navigateToRating = (transactionId) => {
+    // For now, just set the transaction ID for a rating modal
+    // This can be enhanced to show a rating modal
+    setCurrentPage(`rating-${transactionId}`);
+  };
+
   const handleChatRead = async (id) => {
     const token = localStorage.getItem('token');
     if (!token) return;
@@ -261,6 +316,9 @@ function App() {
             notifications={notifications}
             onMarkAsRead={markAsRead}
             onMarkAllAsRead={markAllAsRead}
+            onConfirmPurchase={confirmPurchase}
+            onCancelPurchase={cancelPurchase}
+            onNavigateToRating={navigateToRating}
           />
         )}
         {currentPage === 'profile' && (
@@ -289,6 +347,18 @@ function App() {
           <SellerPage
             sellerId={currentPage.split('-')[1]}
             setCurrentPage={setCurrentPage}
+            currentUserId={user?.id}
+            onProductClick={(productId, sellerId) => {
+              setProductBackPage({ type: 'seller', sellerId });
+              setCurrentPage(`product-${productId}`);
+            }}
+          />
+        )}
+        {currentPage.startsWith('rating-') && (
+          <RatingPage
+            transactionId={currentPage.split('-')[1]}
+            setCurrentPage={setCurrentPage}
+            user={user}
           />
         )}
       </div>

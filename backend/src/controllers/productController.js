@@ -14,6 +14,12 @@ export const getProducts = async (req, res) => {
             where.sellerId = { not: parseInt(excludeUserId) };
         }
 
+        // If fetching specific seller's products, show all (including sold/reserved)
+        // If fetching for homepage (no sellerId), only show active products
+        if (!sellerId) {
+            where.status = 'active';
+        }
+
         const products = await prisma.product.findMany({
             where,
             include: {
@@ -55,7 +61,7 @@ export const getProductById = async (req, res) => {
 
 export const createProduct = async (req, res) => {
     try {
-        const { title, price, description, category, status, location, condition } = req.body;
+        const { title, price, description, category, status, location, condition, deliveryMethod, negotiable } = req.body;
 
         // Simple validation
         if (!title || !price) return res.status(400).json({ message: 'Title and price are required' });
@@ -76,6 +82,8 @@ export const createProduct = async (req, res) => {
                 status: status || 'active',
                 location,
                 condition: condition || '全新',
+                deliveryMethod: deliveryMethod || '面交',
+                negotiable: negotiable === 'true' || negotiable === true,
                 sellerId: req.user.id // From auth middleware
             }
         });

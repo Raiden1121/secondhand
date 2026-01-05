@@ -25,26 +25,33 @@ model User {
   chats         Chat[]         @relation("UserChats")
   favorites     Favorite[]
   reports       Report[]
+  buyerTransactions  Transaction[] @relation("BuyerTransactions")
+  sellerTransactions Transaction[] @relation("SellerTransactions")
+  givenRatings       Rating[]      @relation("GivenRatings")
+  receivedRatings    Rating[]      @relation("ReceivedRatings")
 }
 
 model Product {
-  id          Int       @id @default(autoincrement())
-  title       String
-  price       Int
-  description String
-  images      String
-  category    String
-  status      String    @default("active")
-  reserved    Boolean   @default(false)
-  sellerId    Int
-  seller      User      @relation(fields: [sellerId], references: [id])
-  location    String?
-  condition   String    @default("全新")
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  favorites   Favorite[]
-  reports     Report[]
+  id              Int       @id @default(autoincrement())
+  title           String
+  price           Int
+  description     String
+  images          String
+  category        String
+  status          String    @default("active")
+  reserved        Boolean   @default(false)
+  sellerId        Int
+  seller          User      @relation(fields: [sellerId], references: [id])
+  location        String?
+  condition       String    @default("全新")
+  deliveryMethod  String    @default("面交")
+  negotiable      Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  favorites       Favorite[]
+  reports         Report[]
   messages    Message[]
+  transactions Transaction[]
 }
 
 model Chat {
@@ -77,6 +84,7 @@ model Notification {
   title     String
   content   String
   read      Boolean  @default(false)
+  data      String?  // JSON string for additional data like transactionId
   createdAt DateTime @default(now())
 }
 
@@ -99,4 +107,33 @@ model Report {
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   reason    String
   createdAt DateTime @default(now())
+}
+
+model Transaction {
+  id          Int      @id @default(autoincrement())
+  productId   Int
+  product     Product  @relation(fields: [productId], references: [id])
+  buyerId     Int
+  buyer       User     @relation("BuyerTransactions", fields: [buyerId], references: [id])
+  sellerId    Int
+  seller      User     @relation("SellerTransactions", fields: [sellerId], references: [id])
+  status      String   @default("pending") // pending, confirmed, completed, cancelled
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  ratings     Rating[]
+}
+
+model Rating {
+  id            Int         @id @default(autoincrement())
+  transactionId Int
+  transaction   Transaction @relation(fields: [transactionId], references: [id])
+  raterId       Int
+  rater         User        @relation("GivenRatings", fields: [raterId], references: [id])
+  ratedUserId   Int
+  ratedUser     User        @relation("ReceivedRatings", fields: [ratedUserId], references: [id])
+  score         Int         // 1-5 stars
+  comment       String?
+  createdAt     DateTime    @default(now())
+
+  @@unique([transactionId, raterId])
 }

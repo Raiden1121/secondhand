@@ -1,6 +1,7 @@
 import React from 'react';
+import { Edit3 } from 'lucide-react';
 
-const ProductCard = ({ product, onClick }) => {
+const ProductCard = ({ product, onClick, isOwner, onEdit }) => {
     // Handle both API format (images array/string) and mock format (image emoji)
     const getImage = () => {
         if (product.image) return product.image; // Mock data emoji
@@ -28,27 +29,49 @@ const ProductCard = ({ product, onClick }) => {
         return '📦'; // Default placeholder
     };
 
+    const handleEditClick = (e) => {
+        e.stopPropagation();
+        if (onEdit) onEdit(product);
+    };
+
     return (
         <div
             onClick={onClick}
-            className="bg-white rounded-2xl overflow-hidden cursor-pointer hover:shadow-xl transition group border border-pine-50 hover:border-pine-100"
+            className="bg-white rounded-2xl overflow-hidden cursor-pointer hover:shadow-xl transition group border border-pine-50 hover:border-pine-100 relative"
         >
-            <div className="aspect-square bg-cream-50 flex items-center justify-center text-5xl md:text-6xl group-hover:scale-105 transition overflow-hidden">
+            <div className="aspect-square bg-cream-50 flex items-center justify-center text-5xl md:text-6xl group-hover:scale-105 transition overflow-hidden relative">
                 {getImage()}
+                {isOwner && (
+                    <button
+                        onClick={handleEditClick}
+                        className="absolute top-2 right-2 w-8 h-8 bg-white/90 backdrop-blur-sm text-pine-600 rounded-full flex items-center justify-center hover:bg-forest-500 hover:text-white transition shadow-md z-10"
+                        title="編輯商品"
+                    >
+                        <Edit3 size={16} />
+                    </button>
+                )}
             </div>
             <div className="p-3 md:p-4">
                 <div className="flex items-center justify-between">
                     <h3 className="font-medium text-pine-900 truncate text-sm md:text-base flex-1">{product.title}</h3>
-                    <span className="text-xs text-pine-400 flex-shrink-0 ml-2">{product.condition || (product.status === 'active' ? '販售中' : '已售出')}</span>
+                    <span className="text-xs text-pine-700 flex-shrink-0 ml-2">{product.condition || (product.status === 'active' ? '販售中' : '已售出')}</span>
                 </div>
-                <p className="text-xs text-pine-500 mt-1">{product.category}</p>
+                <div className="flex items-center justify-between mt-1">
+                    <p className="text-xs text-pine-500">{product.category}</p>
+                    {product.deliveryMethod?.includes('寄送') && (
+                        <span className="text-xs text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-200">可寄送</span>
+                    )}
+                </div>
                 <div className="flex items-center justify-between mt-3">
-                    <span className="text-base md:text-lg font-semibold text-pine-800">NT$ {product.price?.toLocaleString?.() || product.price}</span>
+                    <div className="flex items-center gap-2">
+                        <span className="text-base md:text-lg font-semibold text-pine-800">NT$ {product.price?.toLocaleString?.() || product.price}</span>
+                        <span className="text-xs text-pine-400 font-light">{product.negotiable ? '可議價' : '不議價'}</span>
+                    </div>
                     <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${product.reserved
                         ? 'bg-red-100 text-red-600'
                         : 'bg-green-100 text-green-600'
                         }`}>
-                        {product.reserved ? '已保留' : '尚未保留'}
+                        {product.reserved ? '已保留' : '未保留'}
                     </span>
                 </div>
             </div>

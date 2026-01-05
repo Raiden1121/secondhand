@@ -33,6 +33,17 @@ export const createReport = async (req, res) => {
             }
         });
 
+        // Notify the seller about the report
+        await prisma.notification.create({
+            data: {
+                userId: product.sellerId,
+                type: 'report',
+                title: '商品被檢舉',
+                content: `您的商品「${product.title}」被檢舉，原因：${reason}`,
+                data: JSON.stringify({ productId: product.id, reason })
+            }
+        });
+
         res.status(201).json({ message: '檢舉已送出，我們會盡快處理', report });
     } catch (error) {
         console.error('Error creating report:', error);

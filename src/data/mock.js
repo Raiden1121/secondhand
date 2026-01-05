@@ -14,7 +14,9 @@ export const mockNotifications = [
     { id: 4, type: 'review', title: '收到新評價', content: '數學系 李同學給了你 5 星好評', time: '昨天', read: true },
 ];
 
-export const categories = ['全部', '3C', '服飾', '教科書/筆記', '宿舍用品', '社團器材', '食品', '其他'];
+export const categories = ['全部', '教科書與書籍', '3C 電子與周邊', '生活家電', '家具與收納', '交通工具', '服飾與包包', '美妝', '票券', '其他'];
+
+export const conditions = ['全新', '近全新', '二手'];
 
 // College and department hierarchy for NCU
 export const colleges = [
@@ -122,6 +124,10 @@ export const meetingPointCategories = [
     {
         name: '宿舍區',
         locations: ['國際學生宿舍', '中大會館', '女1~4舍', '女十四舍', '男三舍', '男五舍', '男六舍', '男七舍', '男九舍', '男十一舍', '男十二舍', '男研舍']
+    },
+    {
+        name: '其他',
+        locations: ['其他']
     }
 ];
 

@@ -26,6 +26,8 @@ import chatRoutes from './routes/chat.js';
 import notificationRoutes from './routes/notification.js';
 import favoriteRoutes from './routes/favorite.js';
 import reportRoutes from './routes/report.js';
+import transactionRoutes from './routes/transaction.js';
+import ratingRoutes from './routes/rating.js';
 
 // Fix for __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -43,6 +45,8 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/favorites', favoriteRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/transactions', transactionRoutes);
+app.use('/api/ratings', ratingRoutes);
 
 // Socket.io Logic
 io.on('connection', (socket) => {

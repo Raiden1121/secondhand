@@ -210,6 +210,47 @@ export const sendMessage = async (req, res) => {
             data: { updatedAt: new Date() }
         });
 
+        // Get the recipient (other participant)
+        const chatWithParticipants = await prisma.chat.findUnique({
+            where: { id: chatIdInt },
+            include: { participants: true }
+        });
+        const recipient = chatWithParticipants.participants.find(p => p.id !== userId);
+
+        if (recipient) {
+            // Check if there's already an unread notification for this chat
+            const existingNotification = await prisma.notification.findFirst({
+                where: {
+                    userId: recipient.id,
+                    type: 'message',
+                    read: false,
+                    data: { contains: `"chatId":${chatIdInt}` }
+                }
+            });
+
+            // Only create notification if there isn't an unread one already
+            if (!existingNotification) {
+                const sender = await prisma.user.findUnique({
+                    where: { id: userId },
+                    select: { name: true }
+                });
+
+                let msgPreview = content ? content.trim().substring(0, 30) : '';
+                if (image) msgPreview = '📷 傳送了圖片';
+                if (productId) msgPreview = '📦 分享了商品';
+
+                await prisma.notification.create({
+                    data: {
+                        userId: recipient.id,
+                        type: 'message',
+                        title: '新訊息',
+                        content: `${sender.name}: ${msgPreview}`,
+                        data: JSON.stringify({ chatId: chatIdInt })
+                    }
+                });
+            }
+        }
+
         res.status(201).json(message);
     } catch (error) {
         res.status(500).json({ message: error.message });

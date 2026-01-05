@@ -71,6 +71,7 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
 
     const [products, setProducts] = useState([]);
     const [favorites, setFavorites] = useState([]);
+    const [userRating, setUserRating] = useState({ averageRating: 0, totalRatings: 0 });
     const [imageList, setImageList] = useState([]);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [toast, setToast] = useState(null);
@@ -141,8 +142,25 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
             }
         };
 
+        const fetchUserRating = async () => {
+            if (!user?.id) return;
+            try {
+                const response = await fetch(`http://localhost:3000/api/ratings/user/${user.id}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setUserRating({
+                        averageRating: data.averageScore || 0,
+                        totalRatings: data.totalRatings || 0
+                    });
+                }
+            } catch (error) {
+                console.error('Error fetching user rating:', error);
+            }
+        };
+
         fetchMyProducts();
         fetchFavorites();
+        fetchUserRating();
     }, []);
 
     const getProductImage = (product) => {
@@ -642,15 +660,19 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
                             onChange={handleFileSelect}
                         />
                     </div>
-                    <div>
+                    <div
+                        className="flex-1 cursor-pointer hover:opacity-80 transition"
+                        onClick={() => setCurrentPage(`seller-${user?.id}`)}
+                    >
                         <h2 className="text-xl md:text-2xl font-light text-pine-900">
                             {user?.name || '未知使用者'}
                         </h2>
                         <div className="flex items-center gap-1 mt-2">
                             <Star size={16} className="text-amber-500 fill-amber-500" />
-                            <span className="font-medium text-pine-800">4.8</span>
-                            <span className="text-sm text-pine-500 ml-1">(12 則評價)</span>
+                            <span className="font-medium text-pine-800">{userRating.averageRating.toFixed(1)}</span>
+                            <span className="text-sm text-pine-500 ml-1">({userRating.totalRatings} 則評價)</span>
                         </div>
+                        <span className="text-xs text-pine-400 mt-1">點擊查看賣家頁面 →</span>
                     </div>
                 </div>
             </div>
@@ -723,9 +745,6 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
             </div>
 
             <div className="bg-white/90 backdrop-blur-sm rounded-2xl overflow-hidden border border-pine-50 shadow-sm">
-                <button className="w-full text-left p-5 hover:bg-cream-50 transition text-pine-800 border-b border-pine-100/50">
-                    我的評價
-                </button>
                 <button
                     onClick={handleEditProfile}
                     className="w-full text-left p-5 hover:bg-cream-50 transition text-pine-800 border-b border-pine-100/50">
@@ -905,8 +924,8 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
                                                             <label
                                                                 key={loc}
                                                                 className={`flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition text-xs ${selectedLocations.includes(loc)
-                                                                        ? 'bg-forest-100 text-forest-800 border border-forest-300'
-                                                                        : 'bg-cream-50 text-pine-600 hover:bg-cream-100 border border-transparent'
+                                                                    ? 'bg-forest-100 text-forest-800 border border-forest-300'
+                                                                    : 'bg-cream-50 text-pine-600 hover:bg-cream-100 border border-transparent'
                                                                     }`}
                                                             >
                                                                 <input
@@ -920,8 +939,8 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
                                                                     className="sr-only"
                                                                 />
                                                                 <div className={`w-3 h-3 rounded border flex items-center justify-center flex-shrink-0 ${selectedLocations.includes(loc)
-                                                                        ? 'bg-forest-600 border-forest-600'
-                                                                        : 'border-pine-300'
+                                                                    ? 'bg-forest-600 border-forest-600'
+                                                                    : 'border-pine-300'
                                                                     }`}>
                                                                     {selectedLocations.includes(loc) && (
                                                                         <CheckCircle size={10} className="text-white" />

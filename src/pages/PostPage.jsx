@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, X, CheckCircle, AlertCircle, ChevronDown, ChevronUp, MapPin } from 'lucide-react';
-import { categories, meetingPointCategories } from '../data/mock';
+import { Plus, X, CheckCircle, AlertCircle, ChevronDown, ChevronUp, MapPin, Truck } from 'lucide-react';
+import { categories, conditions, meetingPointCategories } from '../data/mock';
 import ImageCropper from '../components/ImageCropper';
 import heic2any from 'heic2any';
 import {
@@ -56,13 +56,16 @@ const SortablePhoto = ({ url, index, onRemove }) => {
 
 const PostPage = ({ setCurrentPage }) => {
     const [title, setTitle] = useState('');
-    const [category, setCategory] = useState('3C');
+    const [category, setCategory] = useState('教科書與書籍');
     const [price, setPrice] = useState('');
     const [condition, setCondition] = useState('全新');
+    const [deliveryMethod, setDeliveryMethod] = useState('');
+    const [negotiable, setNegotiable] = useState(false);
     const [description, setDescription] = useState('');
     const [selectedLocations, setSelectedLocations] = useState([]);
     const [showLocationPicker, setShowLocationPicker] = useState(false);
     const [expandedCategories, setExpandedCategories] = useState({});
+    const [locationSearch, setLocationSearch] = useState('');
     const [images, setImages] = useState([]);
     const [previews, setPreviews] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -233,7 +236,8 @@ const PostPage = ({ setCurrentPage }) => {
         if (images.length === 0) newErrors.images = '請上傳至少一張照片';
         if (!title.trim()) newErrors.title = '請輸入物品名稱';
         if (!price || parseInt(price) < 0) newErrors.price = '請輸入有效價格';
-        if (selectedLocations.length === 0) newErrors.location = '請選擇至少一個面交地點';
+        if (!deliveryMethod) newErrors.deliveryMethod = '請選擇至少一種交易方式';
+        if (deliveryMethod.includes('面交') && selectedLocations.length === 0) newErrors.location = '請選擇至少一個面交地點';
         if (!description.trim()) newErrors.description = '請輸入物品說明';
 
         setErrors(newErrors);
@@ -281,6 +285,8 @@ const PostPage = ({ setCurrentPage }) => {
             formData.append('category', category);
             formData.append('price', parseInt(price));
             formData.append('condition', condition);
+            formData.append('deliveryMethod', deliveryMethod);
+            formData.append('negotiable', negotiable);
             formData.append('description', description.trim());
             formData.append('location', selectedLocations.join('、'));
 
@@ -456,87 +462,173 @@ const PostPage = ({ setCurrentPage }) => {
                             onChange={(e) => setCondition(e.target.value)}
                             className="w-full p-3 border border-pine-200 rounded-2xl text-pine-800 focus:outline-none focus:border-forest-400 focus:ring-1 focus:ring-forest-200 transition bg-white/50"
                         >
-                            <option value="全新">全新</option>
-                            <option value="九成新">九成新</option>
-                            <option value="八成新">八成新</option>
-                            <option value="七成新">七成新</option>
-                            <option value="二手">二手</option>
+                            {conditions.map(cond => (
+                                <option key={cond} value={cond}>{cond}</option>
+                            ))}
                         </select>
                     </div>
                 </div>
 
-                {/* Location - Multi-select */}
-                <div ref={locationPickerRef}>
-                    <label className="block text-sm font-medium text-pine-600 mb-3">
-                        建議面交地點 <span className="text-red-500">*</span>
-                    </label>
-
-                    {/* Selected Locations Display */}
-                    <div
-                        onClick={() => setShowLocationPicker(!showLocationPicker)}
-                        className={`w-full p-3 border rounded-2xl text-pine-800 focus:outline-none transition bg-white/50 cursor-pointer flex items-center justify-between ${errors.location ? 'border-red-300' : 'border-pine-200'} ${showLocationPicker ? 'border-forest-400 ring-1 ring-forest-200' : ''}`}
-                    >
-                        <div className="flex items-center gap-2 flex-wrap flex-1">
-                            <MapPin size={18} className="text-pine-400 flex-shrink-0" />
-                            {selectedLocations.length === 0 ? (
-                                <span className="text-pine-400">點擊選擇面交地點...</span>
-                            ) : (
-                                <span className="text-pine-800">{selectedLocations.join('、')}</span>
-                            )}
+                {/* Delivery Method & Negotiable */}
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-pine-600 mb-3">
+                            交易方式 <span className="text-red-500">*</span>
+                        </label>
+                        <div className="space-y-2">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={deliveryMethod.includes('面交')}
+                                    onChange={(e) => {
+                                        const hasShipping = deliveryMethod.includes('寄送');
+                                        if (e.target.checked) {
+                                            setDeliveryMethod(hasShipping ? '面交、寄送' : '面交');
+                                        } else if (hasShipping) {
+                                            setDeliveryMethod('寄送');
+                                        } else {
+                                            setDeliveryMethod('');
+                                        }
+                                    }}
+                                    className="w-4 h-4 text-forest-600 rounded border-pine-300 focus:ring-forest-500"
+                                />
+                                <span className="text-pine-700">面交</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={deliveryMethod.includes('寄送')}
+                                    onChange={(e) => {
+                                        const hasMeetup = deliveryMethod.includes('面交');
+                                        if (e.target.checked) {
+                                            setDeliveryMethod(hasMeetup ? '面交、寄送' : '寄送');
+                                        } else if (hasMeetup) {
+                                            setDeliveryMethod('面交');
+                                        } else {
+                                            setDeliveryMethod('');
+                                        }
+                                    }}
+                                    className="w-4 h-4 text-forest-600 rounded border-pine-300 focus:ring-forest-500"
+                                />
+                                <span className="text-pine-700">寄送</span>
+                            </label>
                         </div>
-                        {showLocationPicker ? <ChevronUp size={18} className="text-pine-400" /> : <ChevronDown size={18} className="text-pine-400" />}
+                        {errors.deliveryMethod && <p className="text-red-500 text-sm mt-1">{errors.deliveryMethod}</p>}
                     </div>
-
-                    {/* Location Picker Dropdown */}
-                    {showLocationPicker && (
-                        <div className="mt-2 border border-pine-200 rounded-2xl bg-white shadow-lg max-h-80 overflow-y-auto">
-                            {meetingPointCategories.map((cat) => (
-                                <div key={cat.name} className="border-b border-pine-100 last:border-b-0">
-                                    <button
-                                        type="button"
-                                        onClick={() => toggleCategory(cat.name)}
-                                        className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-cream-50 transition"
-                                    >
-                                        <span className="font-medium text-pine-700">{cat.name}</span>
-                                        {expandedCategories[cat.name] ? <ChevronUp size={16} className="text-pine-400" /> : <ChevronDown size={16} className="text-pine-400" />}
-                                    </button>
-                                    {expandedCategories[cat.name] && (
-                                        <div className="px-4 pb-3 grid grid-cols-2 gap-2">
-                                            {cat.locations.map((loc) => (
-                                                <label
-                                                    key={loc}
-                                                    className={`flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition text-sm ${selectedLocations.includes(loc)
-                                                            ? 'bg-forest-100 text-forest-800 border border-forest-300'
-                                                            : 'bg-cream-50 text-pine-600 hover:bg-cream-100 border border-transparent'
-                                                        }`}
-                                                >
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={selectedLocations.includes(loc)}
-                                                        onChange={() => toggleLocation(loc)}
-                                                        className="sr-only"
-                                                    />
-                                                    <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${selectedLocations.includes(loc)
-                                                            ? 'bg-forest-600 border-forest-600'
-                                                            : 'border-pine-300'
-                                                        }`}>
-                                                        {selectedLocations.includes(loc) && (
-                                                            <CheckCircle size={12} className="text-white" />
-                                                        )}
-                                                    </div>
-                                                    <span className="truncate">{loc}</span>
-                                                </label>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
+                    <div>
+                        <label className="block text-sm font-medium text-pine-600 mb-3">
+                            價格屬性
+                        </label>
+                        <div className="flex gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setNegotiable(false)}
+                                className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition ${!negotiable ? 'bg-forest-600 text-white' : 'bg-pine-100 text-pine-600 hover:bg-pine-200'}`}
+                            >
+                                不議價
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setNegotiable(true)}
+                                className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition ${negotiable ? 'bg-forest-600 text-white' : 'bg-pine-100 text-pine-600 hover:bg-pine-200'}`}
+                            >
+                                可議價
+                            </button>
                         </div>
-                    )}
-
-                    {errors.location && <p className="text-red-500 text-sm mt-1">{errors.location}</p>}
-                    <p className="text-pine-400 text-xs mt-2">可選擇多個地點</p>
+                    </div>
                 </div>
+
+                {/* Location - Multi-select (only if 面交 selected) */}
+                {deliveryMethod.includes('面交') && (
+                    <div ref={locationPickerRef}>
+                        <label className="block text-sm font-medium text-pine-600 mb-3">
+                            建議面交地點 <span className="text-red-500">*</span>
+                        </label>
+
+                        {/* Selected Locations Display */}
+                        <div
+                            onClick={() => setShowLocationPicker(!showLocationPicker)}
+                            className={`w-full p-3 border rounded-2xl text-pine-800 focus:outline-none transition bg-white/50 cursor-pointer flex items-center justify-between ${errors.location ? 'border-red-300' : 'border-pine-200'} ${showLocationPicker ? 'border-forest-400 ring-1 ring-forest-200' : ''}`}
+                        >
+                            <div className="flex items-center gap-2 flex-wrap flex-1">
+                                <MapPin size={18} className="text-pine-400 flex-shrink-0" />
+                                {selectedLocations.length === 0 ? (
+                                    <span className="text-pine-400">點擊選擇面交地點...</span>
+                                ) : (
+                                    <span className="text-pine-800">{selectedLocations.join('、')}</span>
+                                )}
+                            </div>
+                            {showLocationPicker ? <ChevronUp size={18} className="text-pine-400" /> : <ChevronDown size={18} className="text-pine-400" />}
+                        </div>
+
+                        {/* Location Picker Dropdown */}
+                        {showLocationPicker && (
+                            <div className="mt-2 border border-pine-200 rounded-2xl bg-white shadow-lg max-h-80 overflow-hidden flex flex-col">
+                                {/* Search Input */}
+                                <div className="p-2 border-b border-pine-100">
+                                    <input
+                                        type="text"
+                                        value={locationSearch}
+                                        onChange={(e) => setLocationSearch(e.target.value)}
+                                        placeholder="搜尋地點..."
+                                        className="w-full px-3 py-2 border border-pine-200 rounded-xl text-sm focus:outline-none focus:border-forest-400"
+                                        onClick={(e) => e.stopPropagation()}
+                                    />
+                                </div>
+                                <div className="overflow-y-auto flex-1">
+                                    {meetingPointCategories
+                                        .filter(cat => !locationSearch || cat.name.toLowerCase().includes(locationSearch.toLowerCase()) || cat.locations.some(loc => loc.toLowerCase().includes(locationSearch.toLowerCase())))
+                                        .map((cat) => (
+                                            <div key={cat.name} className="border-b border-pine-100 last:border-b-0">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleCategory(cat.name)}
+                                                    className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-cream-50 transition"
+                                                >
+                                                    <span className="font-medium text-pine-700">{cat.name}</span>
+                                                    {expandedCategories[cat.name] ? <ChevronUp size={16} className="text-pine-400" /> : <ChevronDown size={16} className="text-pine-400" />}
+                                                </button>
+                                                {(expandedCategories[cat.name] || locationSearch) && (
+                                                    <div className="px-4 pb-3 grid grid-cols-2 gap-2">
+                                                        {cat.locations
+                                                            .filter(loc => !locationSearch || loc.toLowerCase().includes(locationSearch.toLowerCase()))
+                                                            .map((loc) => (
+                                                                <label
+                                                                    key={loc}
+                                                                    className={`flex items-center gap-2 px-3 py-2 rounded-xl cursor-pointer transition text-sm ${selectedLocations.includes(loc)
+                                                                        ? 'bg-forest-100 text-forest-800 border border-forest-300'
+                                                                        : 'bg-cream-50 text-pine-600 hover:bg-cream-100 border border-transparent'
+                                                                        }`}
+                                                                >
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={selectedLocations.includes(loc)}
+                                                                        onChange={() => toggleLocation(loc)}
+                                                                        className="sr-only"
+                                                                    />
+                                                                    <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${selectedLocations.includes(loc)
+                                                                        ? 'bg-forest-600 border-forest-600'
+                                                                        : 'border-pine-300'
+                                                                        }`}>
+                                                                        {selectedLocations.includes(loc) && (
+                                                                            <CheckCircle size={12} className="text-white" />
+                                                                        )}
+                                                                    </div>
+                                                                    <span className="truncate">{loc}</span>
+                                                                </label>
+                                                            ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {errors.location && <p className="text-red-500 text-sm mt-1">{errors.location}</p>}
+                        <p className="text-pine-400 text-xs mt-2">可選擇多個地點</p>
+                    </div>
+                )}
 
                 {/* Description */}
                 <div>
@@ -551,10 +643,10 @@ const PostPage = ({ setCurrentPage }) => {
                         placeholder="分享這件物品的故事..."
                     ></textarea>
                     {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
-                </div>
+                </div >
 
                 {/* Submit Button */}
-                <button
+                < button
                     onClick={handleSubmit}
                     disabled={loading}
                     className={`w-full py-4 rounded-2xl font-medium transition shadow-md hover:shadow-lg transform active:scale-[0.99] ${loading
@@ -563,8 +655,8 @@ const PostPage = ({ setCurrentPage }) => {
                         }`}
                 >
                     {loading ? '發布中...' : '發布'}
-                </button>
-            </div>
+                </button >
+            </div >
 
             <style>{`
                 @keyframes fadeIn {
@@ -574,16 +666,18 @@ const PostPage = ({ setCurrentPage }) => {
             `}</style>
 
             {/* Image Cropper Modal */}
-            {showCropper && imageToCrop && (
-                <ImageCropper
-                    imageSrc={imageToCrop}
-                    onCancel={handleCancelCrop}
-                    onCropComplete={handleCropComplete}
-                    shape="square"
-                    title={`調整照片 (${images.length + 1}/${images.length + pendingFiles.length})`}
-                />
-            )}
-        </div>
+            {
+                showCropper && imageToCrop && (
+                    <ImageCropper
+                        imageSrc={imageToCrop}
+                        onCancel={handleCancelCrop}
+                        onCropComplete={handleCropComplete}
+                        shape="square"
+                        title={`調整照片 (${images.length + 1}/${images.length + pendingFiles.length})`}
+                    />
+                )
+            }
+        </div >
     );
 };
 

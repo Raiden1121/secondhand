@@ -55,14 +55,28 @@ const ChatPage = ({ chats, onChatRead, resetKey, onRefreshChats, initialChatId, 
 
     // Initial Chat Navigation
     useEffect(() => {
-        if (initialChatId && chats.length > 0) {
+        if (initialChatId) {
             const target = chats.find(c => c.id === initialChatId);
             if (target) {
                 setActiveChat(target);
                 if (onClearInitialChatId) onClearInitialChatId();
+            } else if (chats.length > 0) {
+                // Chat not found in list but chats are loaded - fetch it directly 
+                const fetchChatById = async () => {
+                    try {
+                        const token = localStorage.getItem('token');
+                        // Try finding in refreshed list
+                        if (onRefreshChats) {
+                            await onRefreshChats();
+                        }
+                    } catch (error) {
+                        console.error('Error fetching chat:', error);
+                    }
+                };
+                fetchChatById();
             }
         }
-    }, [initialChatId, chats, onClearInitialChatId]);
+    }, [initialChatId, chats, onClearInitialChatId, onRefreshChats]);
 
     // Reset to chat list when resetKey changes
     useEffect(() => {

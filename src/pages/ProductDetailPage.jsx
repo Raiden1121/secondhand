@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, Star, MapPin, Flag, ArrowLeft, CheckCircle, AlertCircle, Share2, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Heart, Star, MapPin, Flag, ArrowLeft, CheckCircle, AlertCircle, Share2, X, ChevronLeft, ChevronRight, ShoppingBag } from 'lucide-react';
 import { meetingPoints } from '../data/mock';
 
 const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigateToChat, productBackPage, onClearBackPage }) => {
@@ -15,6 +15,9 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const [showZoomModal, setShowZoomModal] = useState(false);
     const [sellerAvatarError, setSellerAvatarError] = useState(false);
+    const [hasPendingPurchase, setHasPendingPurchase] = useState(false);
+    const [purchaseLoading, setPurchaseLoading] = useState(false);
+    const [sellerRating, setSellerRating] = useState({ averageScore: 0, totalRatings: 0 });
 
     useEffect(() => {
         const fetchProduct = async () => {
@@ -23,6 +26,22 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
                 if (!response.ok) throw new Error('商品不存在');
                 const data = await response.json();
                 setProduct(data);
+
+                // Fetch seller rating
+                if (data.sellerId) {
+                    try {
+                        const ratingRes = await fetch(`http://localhost:3000/api/ratings/user/${data.sellerId}`);
+                        if (ratingRes.ok) {
+                            const ratingData = await ratingRes.json();
+                            setSellerRating({
+                                averageScore: ratingData.averageScore || 0,
+                                totalRatings: ratingData.totalRatings || 0
+                            });
+                        }
+                    } catch (e) {
+                        console.error('Error fetching seller rating:', e);
+                    }
+                }
             } catch (err) {
                 console.error('Error fetching product:', err);
                 setError(err.message);
@@ -72,6 +91,68 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
         };
         checkFavorite();
     }, [productId]);
+
+    // Check if user has pending purchase for this product
+    useEffect(() => {
+        const checkPurchaseStatus = async () => {
+            const token = localStorage.getItem('token');
+            if (!token || !productId) return;
+
+            try {
+                const response = await fetch(`http://localhost:3000/api/transactions/product/${productId}/status`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setHasPendingPurchase(data.hasPendingRequest);
+                }
+            } catch (err) {
+                console.error('Error checking purchase status:', err);
+            }
+        };
+        checkPurchaseStatus();
+    }, [productId]);
+
+    const handlePurchaseRequest = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            showToast('error', '請先登入');
+            setCurrentPage('login');
+            return;
+        }
+
+        // Check if user is the seller
+        const userId = JSON.parse(atob(token.split('.')[1])).id;
+        if (product?.sellerId === userId) {
+            showToast('error', '不能購買自己的商品');
+            return;
+        }
+
+        setPurchaseLoading(true);
+        try {
+            const response = await fetch('http://localhost:3000/api/transactions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ productId: parseInt(productId) })
+            });
+
+            if (response.ok) {
+                setHasPendingPurchase(true);
+                showToast('success', '已發送購買請求給賣家');
+            } else {
+                const err = await response.json();
+                showToast('error', err.message || '發送購買請求失敗');
+            }
+        } catch (err) {
+            console.error('Error creating purchase request:', err);
+            showToast('error', '發送購買請求失敗');
+        } finally {
+            setPurchaseLoading(false);
+        }
+    };
 
     const toggleFavorite = async () => {
         const token = localStorage.getItem('token');
@@ -232,7 +313,7 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
             <div className="max-w-2xl mx-auto h-full flex flex-col">
                 <div className="bg-white rounded-t-3xl shadow-sm flex-1 flex flex-col min-h-0 overflow-hidden">
                     {/* Image Section - flexible height based on viewport */}
-                    <div className="min-h-[35%] max-h-[50%] bg-cream-50 flex flex-col overflow-hidden flex-shrink-0 relative">
+                    <div className="min-h-[35%] max-h-[46%] bg-cream-50 flex flex-col overflow-hidden flex-shrink-0 relative">
                         {/* Back Button - Absolutely positioned */}
                         <button
                             onClick={() => {
@@ -245,6 +326,8 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
                                         }
                                     } else if (productBackPage.type === 'profile') {
                                         setCurrentPage('profile');
+                                    } else if (productBackPage.type === 'seller' && productBackPage.sellerId) {
+                                        setCurrentPage(`seller-${productBackPage.sellerId}`);
                                     }
                                     if (onClearBackPage) onClearBackPage();
                                 } else {
@@ -351,14 +434,20 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
                                         {product.category}
                                     </span>
                                     <span className="text-pine-500 text-xs">
-                                        {product.status === 'active' ? '販售中' : '已售出'}
+                                        {product.condition}
                                     </span>
                                 </div>
                             </div>
 
-                            <div className="text-3xl md:text-4xl font-light text-pine-800">
-                                NT$ {product.price?.toLocaleString?.() || product.price}
+                            <div className="flex items-center gap-3">
+                                <span className="text-3xl md:text-4xl font-light text-pine-800">
+                                    NT$ {product.price?.toLocaleString?.() || product.price}
+                                </span>
+                                <span className="text-sm text-pine-400 font-light">{product.negotiable ? '可議價' : '不議價'}</span>
                             </div>
+                            {product.deliveryMethod?.includes('寄送') && (
+                                <span className="inline-block text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded-full border border-amber-200 w-fit">可寄送</span>
+                            )}
 
                             <div className="border-t border-pine-100 pt-3 flex items-center justify-between">
                                 <div
@@ -384,7 +473,8 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
                                 </div>
                                 <div className="flex items-center gap-1">
                                     <Star size={14} className="text-amber-500 fill-amber-500" />
-                                    <span className="font-medium text-pine-700 text-sm">4.8</span>
+                                    <span className="font-medium text-pine-700 text-sm">{sellerRating.averageScore.toFixed(1)}</span>
+                                    <span className="text-pine-400 text-xs">({sellerRating.totalRatings})</span>
                                 </div>
                             </div>
                         </div>
@@ -418,12 +508,23 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
                                 </div>
                             </div>
 
-                            <div className="flex gap-3 pt-6">
+                            <div className="flex gap-2 pt-6">
                                 <button
                                     onClick={handleStartChat}
                                     className="flex-1 bg-pine-800 text-white py-3 rounded-2xl font-medium hover:bg-pine-700 transition shadow-md hover:shadow-lg transform active:scale-[0.98] text-sm"
                                 >
                                     開始對話
+                                </button>
+                                <button
+                                    onClick={handlePurchaseRequest}
+                                    disabled={hasPendingPurchase || purchaseLoading || product?.reserved}
+                                    className={`flex-1 py-3 rounded-2xl font-medium transition shadow-md hover:shadow-lg transform active:scale-[0.98] text-sm flex items-center justify-center gap-2 ${hasPendingPurchase || product?.reserved
+                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                        : 'bg-forest-600 text-white hover:bg-forest-700'
+                                        }`}
+                                >
+                                    <ShoppingBag size={16} />
+                                    {purchaseLoading ? '發送中...' : hasPendingPurchase ? '已發送請求' : product?.reserved ? '已保留' : '確認購買'}
                                 </button>
                                 <button
                                     onClick={() => setShowReportModal(true)}
