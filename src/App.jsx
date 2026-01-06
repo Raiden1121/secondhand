@@ -252,6 +252,40 @@ function App() {
     setCurrentPage(`rating-${transactionId}`);
   };
 
+  const deleteNotification = async (id) => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await fetch(`http://localhost:3000/api/notifications/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        setNotifications(prev => prev.filter(n => n.id !== id));
+      }
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
+  };
+
+  const deleteAllReadNotifications = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const response = await fetch('http://localhost:3000/api/notifications/read/all', {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        setNotifications(prev => prev.filter(n => !n.read));
+      }
+    } catch (error) {
+      console.error('Error deleting notifications:', error);
+    }
+  };
+
   const handleChatRead = async (id) => {
     const token = localStorage.getItem('token');
     if (!token) return;
@@ -319,6 +353,8 @@ function App() {
             onConfirmPurchase={confirmPurchase}
             onCancelPurchase={cancelPurchase}
             onNavigateToRating={navigateToRating}
+            onDeleteNotification={deleteNotification}
+            onDeleteAllRead={deleteAllReadNotifications}
           />
         )}
         {currentPage === 'profile' && (

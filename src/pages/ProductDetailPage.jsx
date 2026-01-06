@@ -491,22 +491,24 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
 
                         {/* Footer Info - Fixed */}
                         <div className="flex-shrink-0 pt-3 space-y-3">
-                            <div className="border-t border-pine-100 pt-3">
-                                <h3 className="text-sm font-medium text-pine-600 mb-2 flex items-center gap-2">
-                                    <MapPin size={16} className="text-pine-400" />
-                                    建議見面地點
-                                </h3>
-                                <div className="flex flex-wrap gap-2">
-                                    {(product.location
-                                        ? product.location.split('、').filter(l => l.trim())
-                                        : meetingPoints
-                                    ).map(point => (
-                                        <span key={point} className="bg-forest-50 text-forest-700 px-2 py-1 rounded-full text-xs border border-forest-100">
-                                            {point}
-                                        </span>
-                                    ))}
+                            {product.deliveryMethod?.includes('面交') && (
+                                <div className="border-t border-pine-100 pt-3">
+                                    <h3 className="text-sm font-medium text-pine-600 mb-2 flex items-center gap-2">
+                                        <MapPin size={16} className="text-pine-400" />
+                                        建議見面地點
+                                    </h3>
+                                    <div className="flex flex-wrap gap-2">
+                                        {(product.location
+                                            ? product.location.split('、').filter(l => l.trim())
+                                            : meetingPoints
+                                        ).map((point, index) => (
+                                            <span key={`${point}-${index}`} className="bg-forest-50 text-forest-700 px-2 py-1 rounded-full text-xs border border-forest-100">
+                                                {point}
+                                            </span>
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             <div className="flex gap-2 pt-6">
                                 <button

@@ -28,6 +28,8 @@ import favoriteRoutes from './routes/favorite.js';
 import reportRoutes from './routes/report.js';
 import transactionRoutes from './routes/transaction.js';
 import ratingRoutes from './routes/rating.js';
+import cron from 'node-cron';
+import { autoCleanup } from './services/cleanupService.js';
 
 // Fix for __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -83,3 +85,16 @@ httpServer.listen(PORT, () => {
 prisma.$connect()
     .then(() => console.log('Connected to Database'))
     .catch((err) => console.error('DB Connection Error:', err));
+
+// Auto Cleanup Scheduler
+// Run cleanup daily at 3:00 AM
+cron.schedule('0 3 * * *', async () => {
+    console.log('[Cron] Running auto cleanup task...');
+    try {
+        await autoCleanup();
+    } catch (error) {
+        console.error('[Cron] Auto cleanup failed:', error);
+    }
+});
+
+console.log('[Cron] Auto cleanup scheduled to run daily at 3:00 AM');

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import ProductCard from '../components/products/ProductCard';
 import { categories, colleges } from '../data/mock';
 
@@ -19,7 +19,8 @@ const HomePage = ({ setCurrentPage }) => {
     const [selectedCategory, setSelectedCategory] = useState('全部');
     const [selectedCollege, setSelectedCollege] = useState('全部學院');
     const [selectedDept, setSelectedDept] = useState('全部系所');
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchInput, setSearchInput] = useState(''); // User's current input
+    const [searchQuery, setSearchQuery] = useState(''); // Actual search query applied
     const [sortBy, setSortBy] = useState('default');
 
     // Get available departments based on selected college
@@ -83,7 +84,12 @@ const HomePage = ({ setCurrentPage }) => {
             matchDept = college ? college.departments.includes(product.seller?.department) : true;
         }
 
-        const matchSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase());
+        // Fuzzy search: match in title, description, or category
+        const matchSearch = !searchQuery ||
+            product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            product.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            product.category?.toLowerCase().includes(searchQuery.toLowerCase());
+
         return matchCategory && matchDept && matchSearch;
     });
 
@@ -127,11 +133,34 @@ const HomePage = ({ setCurrentPage }) => {
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-pine-400" size={20} />
                     <input
                         type="text"
-                        placeholder="尋找你需要的物品..."
+                        placeholder="尋找你需要的物品... (按 Enter 搜尋)"
                         className="w-full pl-12 pr-4 py-3.5 bg-white/80 border border-pine-200 rounded-2xl text-pine-800 placeholder-pine-400 focus:outline-none focus:border-forest-400 focus:ring-1 focus:ring-forest-200 transition shadow-sm"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        value={searchInput}
+                        onChange={(e) => {
+                            const newValue = e.target.value;
+                            setSearchInput(newValue);
+                            // Auto-search when deleting (text becomes shorter)
+                            if (newValue.length < searchInput.length) {
+                                setSearchQuery(newValue);
+                            }
+                        }}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                setSearchQuery(searchInput);
+                            }
+                        }}
                     />
+                    {searchQuery && (
+                        <button
+                            onClick={() => {
+                                setSearchInput('');
+                                setSearchQuery('');
+                            }}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-pine-400 hover:text-pine-600"
+                        >
+                            <X size={18} />
+                        </button>
+                    )}
                 </div>
             </div>
 

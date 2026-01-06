@@ -74,6 +74,7 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
     const [userRating, setUserRating] = useState({ averageRating: 0, totalRatings: 0 });
     const [imageList, setImageList] = useState([]);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [productToDelete, setProductToDelete] = useState(null); // Product pending deletion
     const [toast, setToast] = useState(null);
     const [isToastExiting, setIsToastExiting] = useState(false);
 
@@ -624,11 +625,58 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
                 setShowDeleteConfirm(false);
             } else {
                 const err = await response.json();
-                alert(err.message || '刪除失敗');
+                showToast('error', err.message || '刪除失敗');
             }
         } catch (error) {
             console.error('Error deleting product:', error);
-            alert('系統錯誤，請稍後再試');
+            showToast('error', '系統錯誤，請稍後再試');
+        }
+    };
+
+    const confirmProductDelete = async () => {
+        if (!productToDelete) return;
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        try {
+            const response = await fetch(`http://localhost:3000/api/products/${productToDelete.id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                setProducts(prev => prev.filter(p => p.id !== productToDelete.id));
+                setProductToDelete(null);
+                showToast('success', '商品已刪除');
+            } else {
+                const err = await response.json();
+                showToast('error', err.message || '刪除失敗');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('error', '刪除失敗');
+        }
+    };
+
+    const deleteAllSold = async () => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        try {
+            const response = await fetch('http://localhost:3000/api/products/sold/all', {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                setProducts(prev => prev.filter(p => p.status !== 'sold'));
+                showToast('success', `已刪除 ${data.count} 個已售出商品`);
+            } else {
+                const err = await response.json();
+                showToast('error', err.message || '刪除失敗');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            showToast('error', '刪除失敗');
         }
     };
 
@@ -677,16 +725,17 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
                 </div>
             </div>
 
+            {/* My Products Section - Active */}
             <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 md:p-8 border border-pine-50 shadow-sm">
                 <h3 className="font-medium text-pine-900 mb-4 flex items-center gap-2">
                     <Package size={18} />
                     我的物品
                 </h3>
                 <div className="space-y-3">
-                    {products.length === 0 ? (
+                    {products.filter(p => p.status !== 'sold').length === 0 ? (
                         <p className="text-center text-pine-400 py-4 text-sm">目前沒有上架的物品</p>
                     ) : (
-                        products.map(product => (
+                        products.filter(p => p.status !== 'sold').map(product => (
                             <div
                                 key={product.id}
                                 onClick={() => onNavigateToProduct ? onNavigateToProduct(product.id) : setCurrentPage(`product-${product.id}`)}
@@ -709,9 +758,62 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
                                     編輯
                                 </button>
                             </div>
-                        )))}
+                        )))
+                    }
                 </div>
             </div>
+
+            {/* My Products Section - Sold */}
+            {products.filter(p => p.status === 'sold').length > 0 && (
+                <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 md:p-8 border border-pine-50 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-medium text-pine-900 flex items-center gap-2">
+                            <Package size={18} />
+                            已售出商品
+                        </h3>
+                        {products.filter(p => p.status === 'sold').length > 0 && (
+                            <button
+                                onClick={deleteAllSold}
+                                className="text-sm text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg transition"
+                            >
+                                刪除全部
+                            </button>
+                        )}
+                    </div>
+                    <div className="space-y-3">
+                        {products.filter(p => p.status === 'sold').map(product => (
+                            <div
+                                key={product.id}
+                                className="flex items-center gap-4 p-4 border border-pine-100 rounded-xl hover:bg-cream-50 transition "
+                            >
+                                <div
+                                    onClick={() => onNavigateToProduct ? onNavigateToProduct(product.id) : setCurrentPage(`product-${product.id}`)}
+                                    className="w-16 h-16 bg-cream-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 text-pine-600 overflow-hidden cursor-pointer opacity-60">
+                                    {getProductImage(product)}
+                                </div>
+                                <div
+                                    onClick={() => onNavigateToProduct ? onNavigateToProduct(product.id) : setCurrentPage(`product-${product.id}`)}
+                                    className="flex-1 min-w-0 cursor-pointer">
+                                    <h4 className="font-medium text-pine-900 truncate">{product.title}</h4>
+                                    <p className="text-sm text-pine-500 mt-1">NT$ {product.price?.toLocaleString()}</p>
+                                </div>
+                                <span className="text-xs text-pine-400 bg-pine-100 px-3 py-1 rounded-full">
+                                    已售出
+                                </span>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setProductToDelete(product);
+                                    }}
+                                    className="text-sm text-red-500 hover:text-red-700 px-3 py-1 rounded-lg flex-shrink-0 transition"
+                                >
+                                    刪除
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* My Favorites Section */}
             <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 md:p-8 border border-pine-50 shadow-sm">
@@ -726,18 +828,48 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
                         favorites.map(product => (
                             <div
                                 key={product.id}
-                                onClick={() => onNavigateToProduct ? onNavigateToProduct(product.id) : setCurrentPage(`product-${product.id}`)}
-                                className="flex items-center gap-4 p-4 border border-pine-100 rounded-xl hover:bg-cream-50 transition cursor-pointer">
-                                <div className="w-16 h-16 bg-cream-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 text-pine-600 overflow-hidden">
+                                className={`flex items-center gap-4 p-4 border border-pine-100 rounded-xl hover:bg-cream-50 transition ${product.status === 'sold' ? 'opacity-60' : ''}`}>
+                                <div
+                                    onClick={() => onNavigateToProduct ? onNavigateToProduct(product.id) : setCurrentPage(`product-${product.id}`)}
+                                    className={`w-16 h-16 bg-cream-50 rounded-xl flex items-center justify-center text-2xl flex-shrink-0 text-pine-600 overflow-hidden cursor-pointer ${product.status === 'sold' ? 'grayscale' : ''}`}>
                                     {getProductImage(product)}
                                 </div>
-                                <div className="flex-1 min-w-0">
+                                <div
+                                    onClick={() => onNavigateToProduct ? onNavigateToProduct(product.id) : setCurrentPage(`product-${product.id}`)}
+                                    className="flex-1 min-w-0 cursor-pointer">
                                     <h4 className="font-medium text-pine-900 truncate">{product.title}</h4>
                                     <p className="text-sm text-pine-500 mt-1">NT$ {product.price?.toLocaleString()}</p>
                                 </div>
-                                <span className="text-xs text-pine-400">
-                                    {product.seller?.name}
-                                </span>
+                                <div className="flex flex-col items-end gap-1">
+                                    <span className="text-xs text-pine-400">
+                                        {product.seller?.name}
+                                    </span>
+                                    {product.status === 'sold' && (
+                                        <span className="text-xs text-pine-400 bg-pine-100 px-2 py-0.5 rounded-full">
+                                            已售出
+                                        </span>
+                                    )}
+                                </div>
+                                <button
+                                    onClick={async (e) => {
+                                        e.stopPropagation();
+                                        const token = localStorage.getItem('token');
+                                        try {
+                                            const response = await fetch(`http://localhost:3000/api/favorites/${product.id}`, {
+                                                method: 'DELETE',
+                                                headers: { 'Authorization': `Bearer ${token}` }
+                                            });
+                                            if (response.ok) {
+                                                setFavorites(prev => prev.filter(p => p.id !== product.id));
+                                            }
+                                        } catch (error) {
+                                            console.error('Error unfavoriting:', error);
+                                        }
+                                    }}
+                                    className="text-red-400 hover:text-red-600 transition flex-shrink-0"
+                                >
+                                    <Heart size={20} fill="currentColor" />
+                                </button>
                             </div>
                         ))
                     )}
@@ -1279,6 +1411,31 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
                     onCancel={handleCancelCrop}
                     onCropComplete={handleCropComplete}
                 />
+            )}
+
+            {/* Product Delete Confirmation Modal */}
+            {productToDelete && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-3xl w-full max-w-sm p-6">
+                        <h3 className="text-lg font-medium text-pine-900 mb-3">確定刪除商品？</h3>
+                        <p className="text-pine-600 mb-2">{productToDelete.title}</p>
+                        <p className="text-sm text-pine-500 mb-6">此操作無法復原</p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setProductToDelete(null)}
+                                className="flex-1 px-4 py-2.5 bg-gray-100 text-pine-700 rounded-xl hover:bg-gray-200 transition"
+                            >
+                                取消
+                            </button>
+                            <button
+                                onClick={confirmProductDelete}
+                                className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl hover:bg-red-600 transition"
+                            >
+                                確定刪除
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

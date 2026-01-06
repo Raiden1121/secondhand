@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { CheckCheck, Check, X, ShoppingBag, Star, MessageCircle, AlertTriangle } from 'lucide-react';
+import { CheckCheck, Check, X, ShoppingBag, Star, MessageCircle, AlertTriangle, Trash2 } from 'lucide-react';
 
-const NotificationPage = ({ notifications, onMarkAsRead, onMarkAllAsRead, onConfirmPurchase, onCancelPurchase, onNavigateToRating }) => {
+const NotificationPage = ({ notifications, onMarkAsRead, onMarkAllAsRead, onConfirmPurchase, onCancelPurchase, onNavigateToRating, onDeleteNotification, onDeleteAllRead }) => {
     const [processingIds, setProcessingIds] = useState({});
 
     const handleConfirm = async (e, notification) => {
@@ -93,13 +93,24 @@ const NotificationPage = ({ notifications, onMarkAsRead, onMarkAllAsRead, onConf
         <div className="px-4 space-y-4">
             <div className="flex items-center justify-between py-6">
                 <h2 className="text-2xl md:text-3xl font-light text-pine-900 tracking-wide">通知</h2>
-                <button
-                    onClick={onMarkAllAsRead}
-                    className="flex items-center gap-1 text-sm text-pine-600 hover:text-pine-800 hover:bg-pine-100/50 px-3 py-1.5 rounded-full transition"
-                >
-                    <CheckCheck size={16} />
-                    全部已讀
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={onMarkAllAsRead}
+                        className="flex items-center gap-1 text-sm text-pine-600 hover:text-pine-800 hover:bg-pine-100/50 px-3 py-1.5 rounded-full transition"
+                    >
+                        <CheckCheck size={16} />
+                        全部已讀
+                    </button>
+                    {notifications.some(n => n.read) && (
+                        <button
+                            onClick={onDeleteAllRead}
+                            className="flex items-center gap-1 text-sm text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-full transition"
+                        >
+                            <Trash2 size={16} />
+                            刪除已讀
+                        </button>
+                    )}
+                </div>
             </div>
             <div className="space-y-3">
                 {notifications.map(notification => {
@@ -167,6 +178,18 @@ const NotificationPage = ({ notifications, onMarkAsRead, onMarkAllAsRead, onConf
                                         </div>
                                     )}
                                 </div>
+                                {notification.read && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onDeleteNotification(notification.id);
+                                        }}
+                                        className="text-red-400 hover:text-red-600 transition p-2"
+                                        title="刪除此通知"
+                                    >
+                                        <Trash2 size={18} />
+                                    </button>
+                                )}
                                 {!notification.read && (
                                     <div className="w-2 h-2 bg-pine-800 rounded-full flex-shrink-0 mt-2"></div>
                                 )}

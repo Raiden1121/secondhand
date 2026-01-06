@@ -60,6 +60,44 @@ export const markAllRead = async (req, res) => {
     }
 };
 
+export const deleteNotification = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { id } = req.params;
+
+        // Verify ownership
+        const notification = await prisma.notification.findFirst({
+            where: { id: parseInt(id), userId }
+        });
+
+        if (!notification) {
+            return res.status(404).json({ message: 'Notification not found' });
+        }
+
+        await prisma.notification.delete({
+            where: { id: parseInt(id) }
+        });
+
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const deleteAllReadNotifications = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        await prisma.notification.deleteMany({
+            where: { userId, read: true }
+        });
+
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // Helper function to format time
 function formatTime(date) {
     const now = new Date();

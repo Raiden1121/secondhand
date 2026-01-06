@@ -3,7 +3,7 @@ import prisma from '../lib/prisma.js';
 export const getProducts = async (req, res) => {
     try {
         const { sellerId, excludeUserId } = req.query;
-        const where = {};
+        const where = { deleted: false }; // Exclude soft-deleted products
 
         if (sellerId) {
             where.sellerId = parseInt(sellerId);
@@ -14,9 +14,11 @@ export const getProducts = async (req, res) => {
             where.sellerId = { not: parseInt(excludeUserId) };
         }
 
-        // If fetching specific seller's products, show all (including sold/reserved)
+        // If fetching specific seller's products, show active and reserved (hide sold)
         // If fetching for homepage (no sellerId), only show active products
-        if (!sellerId) {
+        if (sellerId) {
+            where.status = { not: 'sold' };
+        } else {
             where.status = 'active';
         }
 
@@ -97,7 +99,10 @@ export const createProduct = async (req, res) => {
 export const getMyProducts = async (req, res) => {
     try {
         const products = await prisma.product.findMany({
-            where: { sellerId: req.user.id },
+            where: {
+                sellerId: req.user.id,
+                deleted: false // Exclude soft-deleted products
+            },
             orderBy: { createdAt: 'desc' }
         });
         res.json(products);
@@ -216,15 +221,43 @@ export const deleteProduct = async (req, res) => {
             return res.status(403).json({ message: 'Unauthorized' });
         }
 
-        await prisma.product.delete({
-            where: { id: parseInt(id) }
+        // Soft delete: mark as deleted instead of actually removing
+        await prisma.product.update({
+            where: { id: parseInt(id) },
+            data: { deleted: true }
         });
 
         res.json({ message: 'Product deleted' });
     } catch (error) {
+        console.error('Delete product error:', error);
         res.status(500).json({ message: error.message });
     }
 };
+
+export const deleteAllSoldProducts = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        // Soft delete all sold products for this user
+        const result = await prisma.product.updateMany({
+            where: {
+                sellerId: userId,
+                status: 'sold',
+                deleted: false
+            },
+            data: { deleted: true }
+        });
+
+        res.json({
+            message: 'All sold products deleted',
+            count: result.count
+        });
+    } catch (error) {
+        console.error('Delete all sold products error:', error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
 
 export const toggleReserve = async (req, res) => {
     try {
