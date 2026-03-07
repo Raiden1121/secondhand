@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Heart, Star, MapPin, Flag, ArrowLeft, CheckCircle, AlertCircle, Share2, X, ChevronLeft, ChevronRight, ShoppingBag } from 'lucide-react';
 import { meetingPoints } from '../data/mock';
 
-const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigateToChat, productBackPage, onClearBackPage }) => {
+const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigateToChat, productBackPage, onClearBackPage, onNavigateToSeller }) => {
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -452,7 +452,13 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
                             <div className="border-t border-pine-100 pt-3 flex items-center justify-between">
                                 <div
                                     className="flex items-center gap-3 cursor-pointer hover:bg-cream-50 p-2 -m-2 rounded-lg transition"
-                                    onClick={() => setCurrentPage(`seller-${product.sellerId}`)}
+                                    onClick={() => {
+                                        if (onNavigateToSeller) {
+                                            onNavigateToSeller(product.sellerId, productId);
+                                        } else {
+                                            setCurrentPage(`seller-${product.sellerId}`);
+                                        }
+                                    }}
                                 >
                                     <div className="w-8 h-8 bg-cream-100 rounded-full flex items-center justify-center text-base overflow-hidden">
                                         {product.seller?.avatar && product.seller.avatar.trim() !== '' && !sellerAvatarError ? (

@@ -91,22 +91,22 @@ export const confirmPurchase = async (req, res) => {
             return res.status(400).json({ message: '此交易已處理' });
         }
 
-        // Update transaction status
-        const updatedTransaction = await prisma.transaction.update({
-            where: { id: parseInt(transactionId) },
-            data: { status: 'confirmed' },
-            include: {
-                product: true,
-                buyer: { select: { id: true, name: true } },
-                seller: { select: { id: true, name: true } }
-            }
-        });
-
-        // Mark product as sold (hide from listings)
-        await prisma.product.update({
-            where: { id: transaction.productId },
-            data: { status: 'sold' }
-        });
+        // Use Prisma transaction to ensure both updates succeed or fail together
+        const [updatedTransaction, updatedProduct] = await prisma.$transaction([
+            prisma.transaction.update({
+                where: { id: parseInt(transactionId) },
+                data: { status: 'confirmed' },
+                include: {
+                    product: true,
+                    buyer: { select: { id: true, name: true } },
+                    seller: { select: { id: true, name: true } }
+                }
+            }),
+            prisma.product.update({
+                where: { id: transaction.productId },
+                data: { status: 'sold' }
+            })
+        ]);
 
         // Create notifications for both parties to rate
         await prisma.notification.createMany({

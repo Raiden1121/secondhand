@@ -309,17 +309,19 @@ export const deleteChat = async (req, res) => {
             return res.status(403).json({ message: 'Not authorized to delete this chat' });
         }
 
-        // Delete all messages in the chat first
-        await prisma.message.deleteMany({
-            where: { chatId: chatIdInt }
+        // Instead of hard deleting, we prevent it for now to protect data integrity,
+        // or we could implement a soft-delete mechanism in the schema later.
+        // For now, we return a message that chat history is preserved for security.
+        return res.status(400).json({
+            message: '基於交易安全考量，目前不支援永久刪除對話紀錄。'
         });
 
-        // Delete the chat
-        await prisma.chat.delete({
-            where: { id: chatIdInt }
-        });
-
+        /* 
+        Original insecure deletion code:
+        await prisma.message.deleteMany({ where: { chatId: chatIdInt } });
+        await prisma.chat.delete({ where: { id: chatIdInt } });
         res.json({ success: true, message: 'Chat deleted successfully' });
+        */
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

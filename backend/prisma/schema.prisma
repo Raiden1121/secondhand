@@ -16,8 +16,12 @@ model User {
   studentId     String?        @unique
   phone         String?
   gender        String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  resetPasswordToken   String?
+  resetPasswordExpires DateTime?
+  isVerified           Boolean        @default(false)
+  verificationToken    String?
 
   products      Product[]
   sentMessages  Message[]

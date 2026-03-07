@@ -56,7 +56,7 @@ const SortablePhoto = ({ id, url, index, onRemove }) => {
     );
 };
 
-const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUserUpdate }) => {
+const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUserUpdate, onNavigateToSeller }) => {
     const [editingProduct, setEditingProduct] = useState(null);
     const [formData, setFormData] = useState({
         title: '',
@@ -710,7 +710,13 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
                     </div>
                     <div
                         className="flex-1 cursor-pointer hover:opacity-80 transition"
-                        onClick={() => setCurrentPage(`seller-${user?.id}`)}
+                        onClick={() => {
+                            if (onNavigateToSeller) {
+                                onNavigateToSeller(user?.id);
+                            } else {
+                                setCurrentPage(`seller-${user?.id}`);
+                            }
+                        }}
                     >
                         <h2 className="text-xl md:text-2xl font-light text-pine-900">
                             {user?.name || '未知使用者'}

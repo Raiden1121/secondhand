@@ -1,6 +1,8 @@
 import prisma from '../lib/prisma.js';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
+import { sendPasswordResetEmail, sendVerificationEmail } from '../services/mailService.js';
 
 export const register = async (req, res) => {
     try {
@@ -33,6 +35,10 @@ export const register = async (req, res) => {
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
+        // Generate verification token
+        const rawToken = crypto.randomBytes(32).toString('hex');
+        const verificationToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+
         const user = await prisma.user.create({
             data: {
                 email,
@@ -42,26 +48,22 @@ export const register = async (req, res) => {
                 avatar,
                 studentId,
                 phone,
-                gender
+                gender,
+                isVerified: false,
+                verificationToken
             }
         });
 
-        const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        // Send verification email
+        await sendVerificationEmail(user.email, rawToken);
+
+        // DO NOT log the user in yet. Tell them to check email.
         res.status(201).json({
-            token,
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                studentId: user.studentId,
-                department: user.department,
-                phone: user.phone,
-                gender: user.gender,
-                avatar: user.avatar
-            }
+            message: '註冊成功！請至您的信箱收取驗證信，完成開通即可登入。'
         });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('Registration error:', error);
+        res.status(500).json({ message: '系統發生錯誤，請稍後再試' });
     }
 };
 
@@ -75,6 +77,11 @@ export const login = async (req, res) => {
         // Check password
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) return res.status(400).json({ message: 'Invalid password' });
+
+        // Enforce Email Verification
+        if (!user.isVerified) {
+            return res.status(403).json({ message: '請先至您的信箱收取驗證信，完成註冊驗證才能登入' });
+        }
 
         const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '24h' });
         res.json({
@@ -183,5 +190,130 @@ export const getUserById = async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
+    }
+};
+
+// Forgot Password
+export const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ message: '請提供電子郵件' });
+        }
+
+        const user = await prisma.user.findUnique({ where: { email } });
+
+        // IMPORTANT: We do not reveal whether the email exists to prevent email enumeration
+        if (!user) {
+            return res.json({ message: '如果信箱存在，密碼重設連結已寄出。' });
+        }
+
+        // Generate reset token
+        const resetToken = crypto.randomBytes(32).toString('hex');
+
+        // Hash token for database storage
+        const resetPasswordToken = crypto
+            .createHash('sha256')
+            .update(resetToken)
+            .digest('hex');
+
+        // Set expiration (1 hour)
+        const resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000);
+
+        await prisma.user.update({
+            where: { email },
+            data: {
+                resetPasswordToken,
+                resetPasswordExpires
+            }
+        });
+
+        // Send Email (Mock)
+        await sendPasswordResetEmail(user.email, resetToken);
+
+        res.json({ message: '如果信箱存在，密碼重設連結已寄出。' });
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        res.status(500).json({ message: '系統發生錯誤，請稍後再試' });
+    }
+};
+
+// Reset Password
+export const resetPassword = async (req, res) => {
+    try {
+        const { token, newPassword } = req.body;
+
+        if (!token || !newPassword) {
+            return res.status(400).json({ message: '請提供必要的資訊' });
+        }
+
+        // Hash the token from the user to compare with DB
+        const resetPasswordToken = crypto
+            .createHash('sha256')
+            .update(token)
+            .digest('hex');
+
+        // Find user with valid token and expiration
+        const user = await prisma.user.findFirst({
+            where: {
+                resetPasswordToken,
+                resetPasswordExpires: { gt: new Date() } // Token has not expired
+            }
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: '重設連結無效或已過期' });
+        }
+
+        // Hash new password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        res.json({ message: '密碼重設成功，請使用新密碼登入' });
+    } catch (error) {
+        console.error('Reset password error:', error);
+        res.status(500).json({ message: '重設密碼失敗，請稍後再試' });
+    }
+};
+
+// Verify Email Account
+export const verifyEmail = async (req, res) => {
+    try {
+        const { token } = req.body;
+        console.log('[DEBUG-VERIFY] Received Token:', token);
+
+        if (!token) {
+            return res.status(400).json({ message: '無效的驗證連結' });
+        }
+
+        const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+        console.log('[DEBUG-VERIFY] Hashed Token:', hashedToken);
+
+        const user = await prisma.user.findFirst({
+            where: {
+                verificationToken: hashedToken,
+                isVerified: false
+            }
+        });
+
+        console.log('[DEBUG-VERIFY] foundUser:', user ? user.email : 'null');
+
+        if (!user) {
+            return res.status(400).json({ message: '驗證連結無效或帳號已驗證' });
+        }
+
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                isVerified: true,
+                verificationToken: null
+            }
+        });
+
+        res.json({ message: '信箱驗證成功，您現在可以登入了！' });
+    } catch (error) {
+        console.error('Email verification error:', error);
+        res.status(500).json({ message: '系統發生錯誤，請稍後再試' });
     }
 };

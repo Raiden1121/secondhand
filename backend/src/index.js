@@ -36,12 +36,32 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Middleware
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+
+// Apply rate limiting to all requests (basic protection)
+const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 300, // Limit each IP to 300 requests per `window` (here, per 15 minutes)
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: '請求次數過多，請稍後再試。' }
+});
+
+
+
+// Security headers
+app.use(helmet());
+app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" })); // Allow cross-origin images
+
 app.use(cors());
+app.use(globalLimiter);
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Routes
 app.use('/api/auth', authRoutes);
+
 app.use('/api/products', productRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/notifications', notificationRoutes);
