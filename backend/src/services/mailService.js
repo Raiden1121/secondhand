@@ -5,7 +5,7 @@ export const sendPasswordResetEmail = async (email, resetToken) => {
         if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
             console.warn('SMTP credentials not found in .env, falling back to mock email service.');
             // Fallback to mock service
-            const clientUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+            const clientUrl = process.env.FRONTEND_URL || 'http://198.13.37.150:5173';
             const resetLink = `${clientUrl}/#reset-password=${resetToken}`;
             console.log('\n======================================================');
             console.log(`[MAIL SERVICE SIMULATION] Sending password reset email`);
@@ -60,7 +60,7 @@ export const sendVerificationEmail = async (email, verificationToken) => {
     try {
         if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
             console.warn('SMTP credentials not found in .env, falling back to mock email service.');
-            const clientUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+            const clientUrl = process.env.FRONTEND_URL || 'http://198.13.37.150:5173';
             const verificationLink = `${clientUrl}/#verify-email=${verificationToken}`;
             console.log('\n======================================================');
             console.log(`[MAIL SERVICE SIMULATION] Sending verification email`);

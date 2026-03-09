@@ -5,8 +5,7 @@ import crypto from 'crypto';
 const CLIENT_ID = process.env.PORTAL_CLIENT_ID;
 const CLIENT_SECRET = process.env.PORTAL_CLIENT_SECRET;
 const REDIRECT_URI = process.env.PORTAL_REDIRECT_URI;
-// Use hardcoded http://localhost:5173 for locally running frontend if env not set
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const FRONTEND_URL = process.env.FRONTEND_URL;
 
 export const initiatePortalAuth = (req, res) => {
     // Scopes requested by user
