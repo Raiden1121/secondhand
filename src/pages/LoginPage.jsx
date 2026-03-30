@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Eye, EyeOff, Lock, User, Mail, ArrowRight, IdCard } from 'lucide-react';
 import pineLan from '../assets/pineLan.webp';
 import { useTranslation } from 'react-i18next';
+import { colleges } from '../data/mock';
 
 const LoginPage = ({ onLogin, onBack }) => {
     const { t } = useTranslation();
@@ -443,12 +444,20 @@ const LoginPage = ({ onLogin, onBack }) => {
                                                 onChange={handleInputChange}
                                             >
                                                 <option value="">{t('auth.select_dept', { defaultValue: '選擇系所' })}</option>
-                                                <option value="資工系">{t('departments.資工系', { defaultValue: '資工系' })}</option>
-                                                <option value="資管系">{t('departments.資管系', { defaultValue: '資管系' })}</option>
-                                                <option value="電機系">{t('departments.電機系', { defaultValue: '電機系' })}</option>
-                                                <option value="數學系">{t('departments.數學系', { defaultValue: '數學系' })}</option>
-                                                <option value="企管系">{t('departments.企管系', { defaultValue: '企管系' })}</option>
-                                                <option value="經濟系">{t('departments.經濟系', { defaultValue: '經濟系' })}</option>
+                                                {colleges.filter(college => college.name !== '全部學院' && college.name !== '其他' && college.name !== '其他分類').map((college, idx) => (
+                                                    <optgroup key={`optgroup-${idx}`} label={t(`colleges.${college.name}`, { defaultValue: college.name })}>
+                                                        {college.departments.map((dept, dIdx) => (
+                                                            <option key={`opt-${idx}-${dIdx}`} value={dept}>
+                                                                {t(`departments.${dept}`, { defaultValue: dept })}
+                                                            </option>
+                                                        ))}
+                                                    </optgroup>
+                                                ))}
+                                                {colleges.find(c => c.name === '其他' || c.name === '其他分類')?.departments.map((dept, dIdx) => (
+                                                    <option key={`other-${dIdx}`} value={dept}>
+                                                        {t(`departments.${dept}`, { defaultValue: dept })}
+                                                    </option>
+                                                ))}
                                             </select>
                                             <div className="absolute right-4 top-1/2 -translate-y-1/2 text-pine-400 pointer-events-none">▼</div>
                                         </div>
