@@ -17,7 +17,7 @@ const RatingPage = ({ transactionId, setCurrentPage, user }) => {
             if (!token) return;
 
             try {
-                const response = await fetch(`http://localhost:3000/api/transactions/${transactionId}`, {
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/transactions/${transactionId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (response.ok) {
@@ -25,7 +25,7 @@ const RatingPage = ({ transactionId, setCurrentPage, user }) => {
                     setTransaction(data);
 
                     // Check if user has already rated
-                    const checkRating = await fetch(`http://localhost:3000/api/ratings/transaction/${transactionId}/status`, {
+                    const checkRating = await fetch(`${import.meta.env.VITE_API_URL}/api/ratings/transaction/${transactionId}/status`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     if (checkRating.ok) {
@@ -56,7 +56,7 @@ const RatingPage = ({ transactionId, setCurrentPage, user }) => {
 
         setSubmitting(true);
         try {
-            const response = await fetch('http://localhost:3000/api/ratings', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/ratings`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -131,7 +131,7 @@ const RatingPage = ({ transactionId, setCurrentPage, user }) => {
                         <div className="w-16 h-16 rounded-full bg-cream-100 flex items-center justify-center mb-2 overflow-hidden">
                             {ratedPerson.avatar ? (
                                 <img
-                                    src={ratedPerson.avatar.startsWith('http') ? ratedPerson.avatar : `http://localhost:3000${ratedPerson.avatar}`}
+                                    src={ratedPerson.avatar.startsWith('http') ? ratedPerson.avatar : `${import.meta.env.VITE_API_URL}${ratedPerson.avatar}`}
                                     alt={ratedPerson.name}
                                     className="w-full h-full object-cover"
                                     onError={(e) => { e.target.style.display = 'none'; e.target.parentNode.innerHTML = '<div class="w-full h-full flex items-center justify-center"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>'; }}

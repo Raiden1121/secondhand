@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Star, Package, Plus, X, User, Mail, IdCard, ArrowRight, AlertTriangle, Heart, Camera, CheckCircle, AlertCircle, ChevronDown, ChevronUp, MapPin } from 'lucide-react';
 import { categories, meetingPointCategories } from '../data/mock';
-import pineLan from '../assets/pineLan.png';
-import pineLogo from '../assets/pineLogo.png';
+import { useTranslation } from 'react-i18next';
+import pineLan from '../assets/pineLan.webp';
+import pineLogo from '../assets/pineLogo.webp';
 import ImageCropper from '../components/ImageCropper';
 import heic2any from 'heic2any';
 import {
@@ -57,6 +58,7 @@ const SortablePhoto = ({ id, url, index, onRemove }) => {
 };
 
 const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUserUpdate, onNavigateToSeller }) => {
+    const { t } = useTranslation();
     const [editingProduct, setEditingProduct] = useState(null);
     const [formData, setFormData] = useState({
         title: '',
@@ -114,7 +116,7 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
             if (!token) return;
 
             try {
-                const response = await fetch('http://localhost:3000/api/products/my', {
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/products/my`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (response.ok) {
@@ -131,7 +133,7 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
             if (!token) return;
 
             try {
-                const response = await fetch('http://localhost:3000/api/favorites', {
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/favorites`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (response.ok) {
@@ -146,7 +148,7 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
         const fetchUserRating = async () => {
             if (!user?.id) return;
             try {
-                const response = await fetch(`http://localhost:3000/api/ratings/user/${user.id}`);
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/ratings/user/${user.id}`);
                 if (response.ok) {
                     const data = await response.json();
                     setUserRating({
@@ -171,9 +173,13 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
         }
 
         if (images && images.length > 0) {
+            let imgUrl = images[0];
+            if (imgUrl.startsWith('/uploads/')) {
+                imgUrl = `${import.meta.env.VITE_API_URL}${imgUrl}`;
+            }
             return (
                 <img
-                    src={`http://localhost:3000${images[0]}`}
+                    src={imgUrl}
                     alt={product.title}
                     className="w-full h-full object-cover rounded-xl"
                 />
@@ -185,7 +191,7 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
     const getAvatarUrl = (avatar) => {
         if (!avatar) return null;
         if (avatar.startsWith('/uploads/')) {
-            return `http://localhost:3000${avatar}`;
+            return `${import.meta.env.VITE_API_URL}${avatar}`;
         }
         // Check if it's a blob url (preview) or full http URL
         if (avatar.startsWith('blob:') || avatar.startsWith('http')) {
@@ -259,7 +265,7 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
         const formattedImages = initialImages.map(url => ({
             id: url,
             type: 'existing',
-            url: `http://localhost:3000${url}`,
+            url: `${import.meta.env.VITE_API_URL}${url}`,
             serverPath: url
         }));
         setImageList(formattedImages);
@@ -389,7 +395,7 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
 
             // Removed legacy newImages
 
-            const response = await fetch(`http://localhost:3000/api/products/${editingProduct.id}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/products/${editingProduct.id}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -516,7 +522,7 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
             formData.append('phone', user.phone || '');
             formData.append('gender', user.gender || '');
 
-            const response = await fetch('http://localhost:3000/api/auth/update', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/update`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -527,7 +533,7 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
             if (response.ok) {
                 const updatedUser = await response.json();
                 // Update avatar preview locally
-                setAvatarPreview(updatedUser.avatar ? `http://localhost:3000${updatedUser.avatar}` : null);
+                setAvatarPreview(updatedUser.avatar ? `${import.meta.env.VITE_API_URL}${updatedUser.avatar}` : null);
                 showToast('success', '頭像更新成功');
             } else {
                 showToast('error', '頭像更新失敗');
@@ -571,7 +577,7 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
                 formData.append('avatar', avatarFile, 'avatar.jpg');
             }
 
-            const response = await fetch('http://localhost:3000/api/auth/update', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/update`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -587,7 +593,7 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
                 }
                 // Update local avatar preview (always set from response to ensure display is correct)
                 if (updatedUser.avatar && updatedUser.avatar.startsWith('/uploads/')) {
-                    setAvatarPreview(`http://localhost:3000${updatedUser.avatar}`);
+                    setAvatarPreview(`${import.meta.env.VITE_API_URL}${updatedUser.avatar}`);
                 } else {
                     // Reset avatar preview so it uses the user.avatar from props
                     setAvatarPreview(null);
@@ -612,7 +618,7 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
         if (!token) return;
 
         try {
-            const response = await fetch(`http://localhost:3000/api/products/${editingProduct.id}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/products/${editingProduct.id}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -639,7 +645,7 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
         if (!token) return;
 
         try {
-            const response = await fetch(`http://localhost:3000/api/products/${productToDelete.id}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/products/${productToDelete.id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -662,7 +668,7 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
         if (!token) return;
 
         try {
-            const response = await fetch('http://localhost:3000/api/products/sold/all', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/products/sold/all`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -719,14 +725,14 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
                         }}
                     >
                         <h2 className="text-xl md:text-2xl font-light text-pine-900">
-                            {user?.name || '未知使用者'}
+                            {user?.name || t('profile.unknown_user', { defaultValue: '未知使用者' })}
                         </h2>
                         <div className="flex items-center gap-1 mt-2">
                             <Star size={16} className="text-amber-500 fill-amber-500" />
                             <span className="font-medium text-pine-800">{userRating.averageRating.toFixed(1)}</span>
-                            <span className="text-sm text-pine-500 ml-1">({userRating.totalRatings} 則評價)</span>
+                            <span className="text-sm text-pine-500 ml-1">({userRating.totalRatings} {t('profile.reviews')})</span>
                         </div>
-                        <span className="text-xs text-pine-400 mt-1">點擊查看賣家頁面 →</span>
+                        <span className="text-xs text-pine-400 mt-1">{t('profile.view_seller_page')}</span>
                     </div>
                 </div>
             </div>
@@ -735,11 +741,11 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
             <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 md:p-8 border border-pine-50 shadow-sm">
                 <h3 className="font-medium text-pine-900 mb-4 flex items-center gap-2">
                     <Package size={18} />
-                    我的物品
+                    {t('profile.my_items')}
                 </h3>
                 <div className="space-y-3">
                     {products.filter(p => p.status !== 'sold').length === 0 ? (
-                        <p className="text-center text-pine-400 py-4 text-sm">目前沒有上架的物品</p>
+                        <p className="text-center text-pine-400 py-4 text-sm">{t('profile.no_items_listed')}</p>
                     ) : (
                         products.filter(p => p.status !== 'sold').map(product => (
                             <div
@@ -761,7 +767,7 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
                                     }}
                                     className="text-sm text-white bg-pine-700 hover:bg-pine-800 px-4 py-2 rounded-lg flex-shrink-0 transition"
                                 >
-                                    編輯
+                                    {t('profile.edit_button', { defaultValue: '編輯' })}
                                 </button>
                             </div>
                         )))
@@ -775,14 +781,14 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="font-medium text-pine-900 flex items-center gap-2">
                             <Package size={18} />
-                            已售出商品
+                            {t('profile.sold_items')}
                         </h3>
                         {products.filter(p => p.status === 'sold').length > 0 && (
                             <button
                                 onClick={deleteAllSold}
                                 className="text-sm text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-lg transition"
                             >
-                                刪除全部
+                                {t('profile.delete_all')}
                             </button>
                         )}
                     </div>
@@ -825,11 +831,11 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
             <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 md:p-8 border border-pine-50 shadow-sm">
                 <h3 className="font-medium text-pine-900 mb-4 flex items-center gap-2">
                     <Heart size={18} className="text-red-400" />
-                    我的收藏
+                    {t('profile.my_favorites')}
                 </h3>
                 <div className="space-y-3">
                     {favorites.length === 0 ? (
-                        <p className="text-center text-pine-400 py-4 text-sm">還沒有收藏任何物品</p>
+                        <p className="text-center text-pine-400 py-4 text-sm">{t('profile.no_favorites')}</p>
                     ) : (
                         favorites.map(product => (
                             <div
@@ -861,7 +867,7 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
                                         e.stopPropagation();
                                         const token = localStorage.getItem('token');
                                         try {
-                                            const response = await fetch(`http://localhost:3000/api/favorites/${product.id}`, {
+                                            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/favorites/${product.id}`, {
                                                 method: 'DELETE',
                                                 headers: { 'Authorization': `Bearer ${token}` }
                                             });
@@ -886,12 +892,12 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
                 <button
                     onClick={handleEditProfile}
                     className="w-full text-left p-5 hover:bg-cream-50 transition text-pine-800 border-b border-pine-100/50">
-                    帳號設定
+                    {t('profile.account_settings')}
                 </button>
                 <button
                     onClick={onLogout}
                     className="w-full text-left p-5 hover:bg-red-50 transition text-red-600/80 hover:text-red-700">
-                    登出
+                    {t('profile.logout')}
                 </button>
             </div>
 
@@ -1122,7 +1128,7 @@ const ProfilePage = ({ user, onLogout, setCurrentPage, onNavigateToProduct, onUs
                                 onClick={async () => {
                                     try {
                                         const token = localStorage.getItem('token');
-                                        const response = await fetch(`http://localhost:3000/api/products/${editingProduct.id}/reserve`, {
+                                        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/products/${editingProduct.id}/reserve`, {
                                             method: 'PATCH',
                                             headers: { 'Authorization': `Bearer ${token}` }
                                         });

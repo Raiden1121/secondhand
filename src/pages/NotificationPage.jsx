@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { CheckCheck, Check, X, ShoppingBag, Star, MessageCircle, AlertTriangle, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const NotificationPage = ({ notifications, onMarkAsRead, onMarkAllAsRead, onConfirmPurchase, onCancelPurchase, onNavigateToRating, onDeleteNotification, onDeleteAllRead }) => {
+    const { t } = useTranslation();
     const [processingIds, setProcessingIds] = useState({});
 
     const handleConfirm = async (e, notification) => {
@@ -92,14 +94,14 @@ const NotificationPage = ({ notifications, onMarkAsRead, onMarkAllAsRead, onConf
     return (
         <div className="px-4 space-y-4">
             <div className="flex items-center justify-between py-6">
-                <h2 className="text-2xl md:text-3xl font-light text-pine-900 tracking-wide">通知</h2>
+                <h2 className="text-2xl md:text-3xl font-light text-pine-900 tracking-wide">{t('notifications.title')}</h2>
                 <div className="flex gap-2">
                     <button
                         onClick={onMarkAllAsRead}
                         className="flex items-center gap-1 text-sm text-pine-600 hover:text-pine-800 hover:bg-pine-100/50 px-3 py-1.5 rounded-full transition"
                     >
                         <CheckCheck size={16} />
-                        全部已讀
+                        {t('notifications.mark_all_read')}
                     </button>
                     {notifications.some(n => n.read) && (
                         <button
@@ -107,7 +109,7 @@ const NotificationPage = ({ notifications, onMarkAsRead, onMarkAllAsRead, onConf
                             className="flex items-center gap-1 text-sm text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-full transition"
                         >
                             <Trash2 size={16} />
-                            刪除已讀
+                            {t('notifications.delete_all_read')}
                         </button>
                     )}
                 </div>
@@ -143,7 +145,7 @@ const NotificationPage = ({ notifications, onMarkAsRead, onMarkAllAsRead, onConf
                                                 className="flex items-center gap-1 px-4 py-2 bg-forest-600 text-white text-sm rounded-xl hover:bg-forest-700 transition disabled:opacity-50"
                                             >
                                                 <Check size={14} />
-                                                {processingIds[notification.id] === 'confirming' ? '處理中...' : '確認交易'}
+                                                {processingIds[notification.id] === 'confirming' ? t('notifications.processing') : t('notifications.confirm_trade')}
                                             </button>
                                             <button
                                                 onClick={(e) => handleCancel(e, notification)}
@@ -151,7 +153,7 @@ const NotificationPage = ({ notifications, onMarkAsRead, onMarkAllAsRead, onConf
                                                 className="flex items-center gap-1 px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded-xl hover:bg-gray-300 transition disabled:opacity-50"
                                             >
                                                 <X size={14} />
-                                                {processingIds[notification.id] === 'cancelling' ? '處理中...' : '取消'}
+                                                {processingIds[notification.id] === 'cancelling' ? t('notifications.processing') : t('notifications.cancel')}
                                             </button>
                                         </div>
                                     )}
@@ -164,7 +166,7 @@ const NotificationPage = ({ notifications, onMarkAsRead, onMarkAllAsRead, onConf
                                                 className="flex items-center gap-1 px-4 py-2 bg-amber-500 text-white text-sm rounded-xl hover:bg-amber-600 transition"
                                             >
                                                 <Star size={14} />
-                                                前往評價
+                                                {t('notifications.go_to_rate')}
                                             </button>
                                             <button
                                                 onClick={(e) => {
@@ -173,7 +175,7 @@ const NotificationPage = ({ notifications, onMarkAsRead, onMarkAllAsRead, onConf
                                                 }}
                                                 className="flex items-center gap-1 px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded-xl hover:bg-gray-300 transition"
                                             >
-                                                下次再評價
+                                                {t('notifications.rate_later')}
                                             </button>
                                         </div>
                                     )}
@@ -185,7 +187,7 @@ const NotificationPage = ({ notifications, onMarkAsRead, onMarkAllAsRead, onConf
                                             onDeleteNotification(notification.id);
                                         }}
                                         className="text-red-400 hover:text-red-600 transition p-2"
-                                        title="刪除此通知"
+                                        title={t('notifications.delete_this')}
                                     >
                                         <Trash2 size={18} />
                                     </button>
@@ -199,7 +201,7 @@ const NotificationPage = ({ notifications, onMarkAsRead, onMarkAllAsRead, onConf
                 })}
                 {notifications.length === 0 && (
                     <div className="text-center py-20 text-pine-400">
-                        目前沒有新通知
+                        {t('notifications.no_notifications')}
                     </div>
                 )}
             </div>

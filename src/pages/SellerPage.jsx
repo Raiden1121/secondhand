@@ -44,17 +44,17 @@ const SellerPage = ({ sellerId, setCurrentPage, onProductClick, currentUserId, s
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const userRes = await fetch(`http://localhost:3000/api/auth/users/${sellerId}`);
+                const userRes = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/users/${sellerId}`);
                 if (!userRes.ok) throw new Error('找不到賣家資訊');
                 const userData = await userRes.json();
                 setSeller(userData);
 
-                const productRes = await fetch(`http://localhost:3000/api/products?sellerId=${sellerId}`);
+                const productRes = await fetch(`${import.meta.env.VITE_API_URL}/api/products?sellerId=${sellerId}`);
                 if (!productRes.ok) throw new Error('無法載入商品');
                 const productData = await productRes.json();
                 setProducts(productData);
 
-                const ratingRes = await fetch(`http://localhost:3000/api/ratings/user/${sellerId}`);
+                const ratingRes = await fetch(`${import.meta.env.VITE_API_URL}/api/ratings/user/${sellerId}`);
                 if (ratingRes.ok) {
                     const ratingData = await ratingRes.json();
                     setSellerRating({
@@ -118,7 +118,7 @@ const SellerPage = ({ sellerId, setCurrentPage, onProductClick, currentUserId, s
         const formattedImages = initialImages.map(url => ({
             id: url,
             type: 'existing',
-            url: `http://localhost:3000${url}`,
+            url: `${import.meta.env.VITE_API_URL}${url}`,
             serverPath: url
         }));
         setImageList(formattedImages);
@@ -218,7 +218,7 @@ const SellerPage = ({ sellerId, setCurrentPage, onProductClick, currentUserId, s
                 }
             });
 
-            const response = await fetch(`http://localhost:3000/api/products/${editingProduct.id}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/products/${editingProduct.id}`, {
                 method: 'PUT',
                 headers: { 'Authorization': `Bearer ${token}` },
                 body: submitData
@@ -243,7 +243,7 @@ const SellerPage = ({ sellerId, setCurrentPage, onProductClick, currentUserId, s
         if (!token) return;
 
         try {
-            const response = await fetch(`http://localhost:3000/api/products/${editingProduct.id}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/products/${editingProduct.id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -267,7 +267,7 @@ const SellerPage = ({ sellerId, setCurrentPage, onProductClick, currentUserId, s
         if (!token) return;
 
         try {
-            const response = await fetch(`http://localhost:3000/api/products/${editingProduct.id}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/products/${editingProduct.id}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -317,7 +317,7 @@ const SellerPage = ({ sellerId, setCurrentPage, onProductClick, currentUserId, s
                     <div className="w-20 h-20 md:w-24 md:h-24 rounded-full bg-cream-100 flex-shrink-0 overflow-hidden border-2 border-white shadow-sm flex items-center justify-center">
                         {seller.avatar && seller.avatar.trim() !== '' && !avatarError ? (
                             <img
-                                src={`http://localhost:3000${seller.avatar}`}
+                                src={`${import.meta.env.VITE_API_URL}${seller.avatar}`}
                                 alt={seller.name}
                                 className="w-full h-full object-cover"
                                 onError={() => setAvatarError(true)}

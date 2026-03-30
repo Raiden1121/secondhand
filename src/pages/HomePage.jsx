@@ -2,18 +2,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Search, X } from 'lucide-react';
 import ProductCard from '../components/products/ProductCard';
 import { categories, colleges } from '../data/mock';
-
-const sortOptions = [
-    { value: 'default', label: '預設排序' },
-    { value: 'price-asc', label: '價格：低到高' },
-    { value: 'price-desc', label: '價格：高到低' },
-    { value: 'favorites-desc', label: '收藏數：多到少' },
-    { value: 'favorites-asc', label: '收藏數：少到多' },
-    { value: 'name-asc', label: '名稱：A-Z' },
-    { value: 'name-desc', label: '名稱：Z-A' },
-];
+import { useTranslation } from 'react-i18next';
 
 const HomePage = ({ setCurrentPage }) => {
+    const { t } = useTranslation();
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedCategory, setSelectedCategory] = useState('全部');
@@ -22,6 +14,16 @@ const HomePage = ({ setCurrentPage }) => {
     const [searchInput, setSearchInput] = useState(''); // User's current input
     const [searchQuery, setSearchQuery] = useState(''); // Actual search query applied
     const [sortBy, setSortBy] = useState('default');
+
+    const sortOptionsKeys = [
+        { value: 'default', labelKey: 'home.sort_default' },
+        { value: 'price-asc', labelKey: 'home.sort_price_asc' },
+        { value: 'price-desc', labelKey: 'home.sort_price_desc' },
+        { value: 'favorites-desc', labelKey: 'home.sort_fav_desc' },
+        { value: 'favorites-asc', labelKey: 'home.sort_fav_asc' },
+        { value: 'name-asc', labelKey: 'home.sort_name_asc' },
+        { value: 'name-desc', labelKey: 'home.sort_name_desc' },
+    ];
 
     // Get available departments based on selected college
     const availableDepts = useMemo(() => {
@@ -43,7 +45,7 @@ const HomePage = ({ setCurrentPage }) => {
         const fetchProducts = async () => {
             try {
                 // Get current user ID to exclude their products
-                let url = 'http://localhost:3000/api/products';
+                let url = `${import.meta.env.VITE_API_URL}/api/products`;
                 const token = localStorage.getItem('token');
                 if (token) {
                     try {
@@ -123,8 +125,8 @@ const HomePage = ({ setCurrentPage }) => {
         <div className="space-y-5">
             {/* 標語 */}
             <div className="text-center py-6 px-4">
-                <h2 className="text-2xl md:text-3xl font-light text-pine-800 mb-2 tracking-wide">傳遞美好，延續故事</h2>
-                <p className="text-sm text-pine-600/80">讓每件物品找到下一個珍惜它的人</p>
+                <h2 className="text-2xl md:text-3xl font-light text-pine-800 mb-2 tracking-wide">{t('home.slogan')}</h2>
+                <p className="text-sm text-pine-600/80">{t('home.sub_slogan')}</p>
             </div>
 
             {/* 搜尋列 */}
@@ -133,7 +135,7 @@ const HomePage = ({ setCurrentPage }) => {
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-pine-400" size={20} />
                     <input
                         type="text"
-                        placeholder="尋找你需要的物品... (按 Enter 搜尋)"
+                        placeholder={t('home.search_placeholder')}
                         className="w-full pl-12 pr-4 py-3.5 bg-white/80 border border-pine-200 rounded-2xl text-pine-800 placeholder-pine-400 focus:outline-none focus:border-forest-400 focus:ring-1 focus:ring-forest-200 transition shadow-sm"
                         value={searchInput}
                         onChange={(e) => {
@@ -166,8 +168,22 @@ const HomePage = ({ setCurrentPage }) => {
 
             {/* 分類篩選 */}
             <div className="px-4">
-                <h3 className="text-sm font-medium text-pine-700 mb-3">分類</h3>
+                <h3 className="text-sm font-medium text-pine-700 mb-3">{t('home.category')}</h3>
                 <div className="flex flex-wrap gap-2">
+                    {/* The "All" button handles the reset to '全部' state. */}
+                    <button
+                        onClick={() => setSelectedCategory('全部')}
+                        className={`px-4 py-2 rounded-full text-sm transition ${selectedCategory === '全部'
+                            ? 'bg-pine-800 text-white shadow-md'
+                            : 'bg-cream-100 text-pine-600 hover:bg-cream-200 hover:text-pine-800'
+                            }`}
+                    >
+                        {t('home.all')}
+                    </button>
+
+                    {/* Keep the original database-matched category texts for functionality, 
+                        or map them to translations if a translation mapping existed. 
+                        Since category values are used directly without i18n map currently, we render them directly. */}
                     {categories.map(cat => (
                         <button
                             key={cat}
@@ -177,7 +193,7 @@ const HomePage = ({ setCurrentPage }) => {
                                 : 'bg-cream-100 text-pine-600 hover:bg-cream-200 hover:text-pine-800'
                                 }`}
                         >
-                            {cat}
+                            {t(`categories.${cat}`, { defaultValue: cat })}
                         </button>
                     ))}
                 </div>
@@ -186,51 +202,52 @@ const HomePage = ({ setCurrentPage }) => {
             {/* 學院 & 系所篩選 & 排序 */}
             <div className="px-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                    <h3 className="text-sm font-medium text-pine-700 mb-3">學院</h3>
+                    <h3 className="text-sm font-medium text-pine-700 mb-3">{t('home.college')}</h3>
                     <select
                         value={selectedCollege}
                         onChange={(e) => setSelectedCollege(e.target.value)}
                         className="w-full p-3 bg-white/80 border border-pine-200 rounded-2xl text-pine-700 focus:outline-none focus:border-forest-400 focus:ring-1 focus:ring-forest-200 transition shadow-sm"
                     >
+                        <option value="全部學院">{t('home.all_colleges')}</option>
                         {colleges.map(college => (
-                            <option key={college.name} value={college.name}>{college.name}</option>
+                            <option key={college.name} value={college.name}>{t(`colleges.${college.name}`, { defaultValue: college.name })}</option>
                         ))}
                     </select>
                 </div>
                 <div>
-                    <h3 className="text-sm font-medium text-pine-700 mb-3">系所</h3>
+                    <h3 className="text-sm font-medium text-pine-700 mb-3">{t('home.department')}</h3>
                     <select
                         value={selectedDept}
                         onChange={(e) => setSelectedDept(e.target.value)}
                         className="w-full p-3 bg-white/80 border border-pine-200 rounded-2xl text-pine-700 focus:outline-none focus:border-forest-400 focus:ring-1 focus:ring-forest-200 transition shadow-sm"
                     >
-                        <option value="全部系所">全部系所</option>
+                        <option value="全部系所">{t('home.all_departments')}</option>
                         {selectedCollege === '全部學院' ? (
                             // Show all departments grouped by college
                             colleges.filter(c => c.name !== '全部學院').map(college => (
-                                <optgroup key={college.name} label={college.name}>
+                                <optgroup key={college.name} label={t(`colleges.${college.name}`, { defaultValue: college.name })}>
                                     {college.departments.map(dept => (
-                                        <option key={dept} value={dept}>{dept}</option>
+                                        <option key={dept} value={dept}>{t(`departments.${dept}`, { defaultValue: dept })}</option>
                                     ))}
                                 </optgroup>
                             ))
                         ) : (
                             // Show only departments from selected college
                             availableDepts.filter(d => d !== '全部系所').map(dept => (
-                                <option key={dept} value={dept}>{dept}</option>
+                                <option key={dept} value={dept}>{t(`departments.${dept}`, { defaultValue: dept })}</option>
                             ))
                         )}
                     </select>
                 </div>
                 <div>
-                    <h3 className="text-sm font-medium text-pine-700 mb-3">排序</h3>
+                    <h3 className="text-sm font-medium text-pine-700 mb-3">{t('home.sort')}</h3>
                     <select
                         value={sortBy}
                         onChange={(e) => setSortBy(e.target.value)}
                         className="w-full p-3 bg-white/80 border border-pine-200 rounded-2xl text-pine-700 focus:outline-none focus:border-forest-400 focus:ring-1 focus:ring-forest-200 transition shadow-sm"
                     >
-                        {sortOptions.map(opt => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        {sortOptionsKeys.map(opt => (
+                            <option key={opt.value} value={opt.value}>{t(opt.labelKey)}</option>
                         ))}
                     </select>
                 </div>
@@ -239,9 +256,9 @@ const HomePage = ({ setCurrentPage }) => {
             {/* 商品列表 */}
             <div className="px-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-4">
                 {loading ? (
-                    <div className="col-span-full text-center py-10 text-pine-400">載入中...</div>
+                    <div className="col-span-full text-center py-10 text-pine-400">{t('home.loading')}</div>
                 ) : sortedProducts.length === 0 ? (
-                    <div className="col-span-full text-center py-10 text-pine-400">目前沒有商品</div>
+                    <div className="col-span-full text-center py-10 text-pine-400">{t('home.no_products')}</div>
                 ) : (
                     sortedProducts.map(product => (
                         <ProductCard

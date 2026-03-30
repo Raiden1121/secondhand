@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff, Lock, CheckCircle, ArrowRight } from 'lucide-react';
-import pineLan from '../assets/pineLan.png';
+import pineLan from '../assets/pineLan.webp';
 
 const ResetPasswordPage = ({ resetToken, onPasswordResetSuccess, onBackToLogin }) => {
     const [formData, setFormData] = useState({
@@ -41,7 +41,7 @@ const ResetPasswordPage = ({ resetToken, onPasswordResetSuccess, onBackToLogin }
         setLoading(true);
 
         try {
-            const response = await fetch('http://localhost:3000/api/auth/reset-password', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/reset-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

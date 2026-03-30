@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Send, Image, MoreVertical, Phone, Trash2, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const ChatPage = ({ chats, onChatRead, resetKey, onRefreshChats, initialChatId, onClearInitialChatId, initialProductId, onClearInitialProductId, setCurrentPage, onProductFromChat }) => {
+    const { t } = useTranslation();
     const [activeChat, setActiveChat] = useState(null);
     const [messages, setMessages] = useState([]);
     const [inputText, setInputText] = useState("");
@@ -33,7 +35,7 @@ const ChatPage = ({ chats, onChatRead, resetKey, onRefreshChats, initialChatId, 
         if (pendingProductId) {
             const fetchProduct = async () => {
                 try {
-                    const response = await fetch(`http://localhost:3000/api/products/${pendingProductId}`);
+                    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/products/${pendingProductId}`);
                     if (response.ok) {
                         const data = await response.json();
                         setPendingProduct(data);
@@ -110,7 +112,7 @@ const ChatPage = ({ chats, onChatRead, resetKey, onRefreshChats, initialChatId, 
             const token = localStorage.getItem('token');
             if (!token) return;
             try {
-                const res = await fetch('http://localhost:3000/api/auth/me', {
+                const res = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/me`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
@@ -132,7 +134,7 @@ const ChatPage = ({ chats, onChatRead, resetKey, onRefreshChats, initialChatId, 
             setLoading(true);
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`http://localhost:3000/api/chat/${activeChat.id}/messages`, {
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/chat/${activeChat.id}/messages`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (response.ok) {
@@ -169,7 +171,7 @@ const ChatPage = ({ chats, onChatRead, resetKey, onRefreshChats, initialChatId, 
     const renderAvatar = (avatar) => {
         if (!avatar) return '👤';
         if (avatar.startsWith('/uploads/') || avatar.startsWith('http')) {
-            return <img src={avatar.startsWith('/') ? `http://localhost:3000${avatar}` : avatar} alt="Avatar" className="w-full h-full object-cover" />;
+            return <img src={avatar.startsWith('/') ? `${import.meta.env.VITE_API_URL}${avatar}` : avatar} alt="Avatar" className="w-full h-full object-cover" />;
         }
         return <span className="text-2xl">{avatar}</span>;
     };
@@ -186,12 +188,12 @@ const ChatPage = ({ chats, onChatRead, resetKey, onRefreshChats, initialChatId, 
         e.stopPropagation();
 
         setConfirmDialog({
-            title: '刪除對話',
-            message: '確定要刪除這個對話嗎？此操作無法復原。',
+            title: t('chat.delete_title', { defaultValue: '刪除對話' }),
+            message: t('chat.delete_desc', { defaultValue: '確定要刪除這個對話嗎？此操作無法復原。' }),
             onConfirm: async () => {
                 try {
                     const token = localStorage.getItem('token');
-                    const response = await fetch(`http://localhost:3000/api/chat/${chatId}`, {
+                    const response = await fetch(`${import.meta.env.VITE_API_URL}/api/chat/${chatId}`, {
                         method: 'DELETE',
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
@@ -255,7 +257,7 @@ const ChatPage = ({ chats, onChatRead, resetKey, onRefreshChats, initialChatId, 
                 formData.append('productId', pendingProductId);
             }
 
-            const response = await fetch(`http://localhost:3000/api/chat/${activeChat.id}/messages`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/chat/${activeChat.id}/messages`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -328,13 +330,13 @@ const ChatPage = ({ chats, onChatRead, resetKey, onRefreshChats, initialChatId, 
                                 onClick={confirmDialog.onCancel}
                                 className="px-4 py-2 rounded-xl text-pine-600 hover:bg-pine-50 transition"
                             >
-                                取消
+                                {t('chat.cancel', { defaultValue: '取消' })}
                             </button>
                             <button
                                 onClick={confirmDialog.onConfirm}
                                 className="px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 transition shadow-sm hover:shadow-md"
                             >
-                                確定刪除
+                                {t('chat.confirm_delete', { defaultValue: '確定刪除' })}
                             </button>
                         </div>
                     </div>
@@ -406,7 +408,7 @@ const ChatPage = ({ chats, onChatRead, resetKey, onRefreshChats, initialChatId, 
                                                                 const images = typeof msg.product.images === 'string' ? JSON.parse(msg.product.images) : msg.product.images;
                                                                 const firstImage = images && images.length > 0 ? images[0] : null;
                                                                 return firstImage ? (
-                                                                    <img src={`http://localhost:3000${firstImage}`} alt={msg.product.title} className="w-full h-full object-cover" />
+                                                                    <img src={`${import.meta.env.VITE_API_URL}${firstImage}`} alt={msg.product.title} className="w-full h-full object-cover" />
                                                                 ) : (
                                                                     <span className="text-2xl flex items-center justify-center h-full">📦</span>
                                                                 );
@@ -428,10 +430,10 @@ const ChatPage = ({ chats, onChatRead, resetKey, onRefreshChats, initialChatId, 
                                         )}
                                         {msg.image && (
                                             <img
-                                                src={`http://localhost:3000${msg.image}`}
+                                                src={`${import.meta.env.VITE_API_URL}${msg.image}`}
                                                 alt="Shared image"
                                                 className="max-w-[300px] max-h-[400px] w-auto h-auto rounded-t-2xl cursor-pointer hover:opacity-90 transition object-contain"
-                                                onClick={() => window.open(`http://localhost:3000${msg.image}`, '_blank')}
+                                                onClick={() => window.open(`${import.meta.env.VITE_API_URL}${msg.image}`, '_blank')}
                                             />
                                         )}
                                         {msg.text && <p className="px-4 py-2.5">{msg.text}</p>}
@@ -457,7 +459,7 @@ const ChatPage = ({ chats, onChatRead, resetKey, onRefreshChats, initialChatId, 
                                             const images = typeof pendingProduct.images === 'string' ? JSON.parse(pendingProduct.images) : pendingProduct.images;
                                             const firstImage = images && images.length > 0 ? images[0] : null;
                                             return firstImage ? (
-                                                <img src={`http://localhost:3000${firstImage}`} alt={pendingProduct.title} className="w-full h-full object-cover" />
+                                                <img src={`${import.meta.env.VITE_API_URL}${firstImage}`} alt={pendingProduct.title} className="w-full h-full object-cover" />
                                             ) : (
                                                 <span className="text-xl flex items-center justify-center h-full">📦</span>
                                             );
@@ -509,7 +511,7 @@ const ChatPage = ({ chats, onChatRead, resetKey, onRefreshChats, initialChatId, 
                                 <textarea
                                     value={inputText}
                                     onChange={(e) => setInputText(e.target.value)}
-                                    placeholder="輸入訊息..."
+                                    placeholder={t('chat.input_placeholder', { defaultValue: '輸入訊息...' })}
                                     className="w-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 p-0 text-pine-800 placeholder-pine-400 resize-none max-h-24 text-sm leading-relaxed"
                                     rows="1"
                                     onCompositionStart={() => setIsComposing(true)}
@@ -543,10 +545,10 @@ const ChatPage = ({ chats, onChatRead, resetKey, onRefreshChats, initialChatId, 
         <>
             {renderGlobalUI()}
             <div className="px-4 py-6 max-w-4xl mx-auto">
-                <h2 className="text-2xl md:text-3xl font-light text-pine-900 pb-6 tracking-wide">對話</h2>
+                <h2 className="text-2xl md:text-3xl font-light text-pine-900 pb-6 tracking-wide">{t('chat.title', { defaultValue: '對話' })}</h2>
                 <div className="space-y-3">
                     {chats.length === 0 ? (
-                        <div className="text-center py-10 text-pine-400">目前沒有對話</div>
+                        <div className="text-center py-10 text-pine-400">{t('chat.no_chats', { defaultValue: '目前沒有對話' })}</div>
                     ) : (
                         <div className="space-y-3">
                             {chats.map(chat => (
@@ -567,7 +569,7 @@ const ChatPage = ({ chats, onChatRead, resetKey, onRefreshChats, initialChatId, 
                                             <span className="text-xs text-pine-400 flex-shrink-0 ml-2">{formatTime(chat.time)}</span>
                                         </div>
                                         <p className={chat.unread > 0 ? "text-sm text-pine-800 font-medium truncate" : "text-sm text-pine-600 truncate"}>
-                                            {chat.lastMsg || '開始新的對話'}
+                                            {chat.lastMsg || t('chat.start_new', { defaultValue: '開始新的對話' })}
                                         </p>
                                     </div>
                                     {chat.unread > 0 && (

@@ -1,7 +1,9 @@
 import React from 'react';
 import { Home, MessageCircle, Plus, Bell, User } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const MobileNav = ({ currentPage, setCurrentPage, unreadCount, chatUnreadCount }) => {
+    const { t } = useTranslation();
     return (
         <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-pine-100 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50 pb-safe">
             <div className="flex justify-around py-3">
@@ -11,7 +13,7 @@ const MobileNav = ({ currentPage, setCurrentPage, unreadCount, chatUnreadCount }
                         }`}
                 >
                     <Home size={24} />
-                    <span className="text-xs">首頁</span>
+                    <span className="text-xs">{t('nav.home')}</span>
                 </button>
                 <button
                     onClick={() => setCurrentPage('chat')}
@@ -19,7 +21,7 @@ const MobileNav = ({ currentPage, setCurrentPage, unreadCount, chatUnreadCount }
                         }`}
                 >
                     <MessageCircle size={24} />
-                    <span className="text-xs">對話</span>
+                    <span className="text-xs">{t('nav.chat')}</span>
                     <span className="absolute top-0 right-4 w-4 h-4 bg-stone-800 text-white text-xs rounded-full flex items-center justify-center">
                         2
                     </span>
@@ -31,7 +33,7 @@ const MobileNav = ({ currentPage, setCurrentPage, unreadCount, chatUnreadCount }
                     <div className="w-14 h-14 bg-pine-800 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-pine-700 transition ring-4 ring-white">
                         <Plus size={28} />
                     </div>
-                    <span className="text-xs text-pine-600 mt-1 font-medium">分享</span>
+                    <span className="text-xs text-pine-600 mt-1 font-medium">{t('nav.post')}</span>
                 </button>
                 <button
                     onClick={() => setCurrentPage('chat')}
@@ -39,7 +41,7 @@ const MobileNav = ({ currentPage, setCurrentPage, unreadCount, chatUnreadCount }
                         }`}
                 >
                     <MessageCircle size={24} />
-                    <span className="text-[10px] mt-1 font-medium">對話</span>
+                    <span className="text-[10px] mt-1 font-medium">{t('nav.chat')}</span>
                     {chatUnreadCount > 0 && (
                         <span className="absolute top-1 right-5 w-4 h-4 bg-stone-800 text-white text-[10px] rounded-full flex items-center justify-center">
                             {chatUnreadCount}
@@ -52,7 +54,7 @@ const MobileNav = ({ currentPage, setCurrentPage, unreadCount, chatUnreadCount }
                         }`}
                 >
                     <Bell size={24} />
-                    <span className="text-[10px] mt-1 font-medium">通知</span>
+                    <span className="text-[10px] mt-1 font-medium">{t('nav.notifications')}</span>
                     {unreadCount > 0 && (
                         <span className="absolute top-1 right-5 w-4 h-4 bg-stone-800 text-white text-[10px] rounded-full flex items-center justify-center">
                             {unreadCount}
@@ -65,7 +67,7 @@ const MobileNav = ({ currentPage, setCurrentPage, unreadCount, chatUnreadCount }
                         }`}
                 >
                     <User size={24} />
-                    <span className="text-xs">我的</span>
+                    <span className="text-xs">{t('nav.profile')}</span>
                 </button>
             </div>
         </div>

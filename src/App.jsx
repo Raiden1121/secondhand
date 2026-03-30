@@ -48,7 +48,7 @@ function App() {
     if (!token) return;
 
     try {
-      const response = await fetch("http://localhost:3000/api/notifications", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/notifications`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -66,7 +66,7 @@ function App() {
     if (!token) return;
 
     try {
-      const response = await fetch("http://localhost:3000/api/chat", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/chat`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (response.ok) {
@@ -111,7 +111,7 @@ function App() {
 
       if (token) {
         try {
-          const response = await fetch("http://localhost:3000/api/auth/me", {
+          const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/me`, {
             headers: { Authorization: `Bearer ${token}` },
           });
 
@@ -194,7 +194,7 @@ function App() {
     if (!token) return;
 
     try {
-      await fetch(`http://localhost:3000/api/notifications/${id}/read`, {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/notifications/${id}/read`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -211,7 +211,7 @@ function App() {
     if (!token) return;
 
     try {
-      await fetch("http://localhost:3000/api/notifications/read-all", {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/notifications/read-all`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -227,7 +227,7 @@ function App() {
 
     try {
       const response = await fetch(
-        `http://localhost:3000/api/transactions/${transactionId}/confirm`,
+        `${import.meta.env.VITE_API_URL}/api/transactions/${transactionId}/confirm`,
         {
           method: "PATCH",
           headers: { Authorization: `Bearer ${token}` },
@@ -258,7 +258,7 @@ function App() {
 
     try {
       const response = await fetch(
-        `http://localhost:3000/api/transactions/${transactionId}/cancel`,
+        `${import.meta.env.VITE_API_URL}/api/transactions/${transactionId}/cancel`,
         {
           method: "PATCH",
           headers: { Authorization: `Bearer ${token}` },
@@ -287,7 +287,7 @@ function App() {
 
     try {
       const response = await fetch(
-        `http://localhost:3000/api/notifications/${id}`,
+        `${import.meta.env.VITE_API_URL}/api/notifications/${id}`,
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
@@ -307,7 +307,7 @@ function App() {
 
     try {
       const response = await fetch(
-        "http://localhost:3000/api/notifications/read/all",
+        `${import.meta.env.VITE_API_URL}/api/notifications/read/all`,
         {
           method: "DELETE",
           headers: { Authorization: `Bearer ${token}` },
@@ -326,7 +326,7 @@ function App() {
     if (!token) return;
 
     try {
-      await fetch(`http://localhost:3000/api/chat/${id}/read`, {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/chat/${id}/read`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` },
       });

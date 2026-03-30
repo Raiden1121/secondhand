@@ -27,6 +27,7 @@ model User {
   sentMessages  Message[]
   notifications Notification[]
   chats         Chat[]         @relation("UserChats")
+  deletedChats  Chat[]         @relation("DeletedChats")
   favorites     Favorite[]
   reports       Report[]
   buyerTransactions  Transaction[] @relation("BuyerTransactions")
@@ -63,6 +64,7 @@ model Product {
 model Chat {
   id           Int       @id @default(autoincrement())
   participants User[]    @relation("UserChats")
+  deletedBy    User[]    @relation("DeletedChats")
   messages     Message[]
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt

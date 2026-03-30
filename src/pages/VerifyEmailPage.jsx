@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MailCheck, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
-import pineLan from '../assets/pineLan.png';
+import pineLan from '../assets/pineLan.webp';
 
 const verifiedTokens = new Set();
 
@@ -14,7 +14,7 @@ const VerifyEmailPage = ({ verificationToken, onVerified, onBackToLogin }) => {
             verifiedTokens.add(verificationToken);
 
             try {
-                const response = await fetch('http://localhost:3000/api/auth/verify-email', {
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/verify-email`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token: verificationToken })

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, Lock, User, Mail, ArrowRight, IdCard } from 'lucide-react';
-import pineLan from '../assets/pineLan.png';
+import pineLan from '../assets/pineLan.webp';
+import { useTranslation } from 'react-i18next';
 
 const LoginPage = ({ onLogin, onBack }) => {
+    const { t } = useTranslation();
     const [activeTab, setActiveTab] = useState('external'); // 'external' or 'password'
     const [showPassword, setShowPassword] = useState(false);
     const [isRegistering, setIsRegistering] = useState(false); // Toggle between Login and Register form
@@ -39,7 +41,7 @@ const LoginPage = ({ onLogin, onBack }) => {
 
         if (isForgotPassword) {
             try {
-                const response = await fetch('http://localhost:3000/api/auth/forgot-password', {
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/forgot-password`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email: formData.email })
@@ -74,7 +76,7 @@ const LoginPage = ({ onLogin, onBack }) => {
                 }
                 : { email: formData.email, password: formData.password };
 
-            const response = await fetch(`http://localhost:3000${endpoint}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
@@ -132,7 +134,7 @@ const LoginPage = ({ onLogin, onBack }) => {
                 </div>
 
                 <h2 className="text-3xl font-light text-center text-pine-900 mb-8 tracking-wide">
-                    {isForgotPassword ? '重設密碼' : isRegistering ? '註冊帳號' : '登入'}
+                    {isForgotPassword ? t('auth.reset_password', { defaultValue: '重設密碼' }) : isRegistering ? t('auth.register', { defaultValue: '註冊帳號' }) : t('auth.login', { defaultValue: '登入' })}
                 </h2>
 
                 {/* Tabs */}
@@ -145,7 +147,7 @@ const LoginPage = ({ onLogin, onBack }) => {
                                 }`}
                             onClick={() => setActiveTab('external')}
                         >
-                            校園帳號登入
+                            {t('auth.ncu_login', { defaultValue: '校園帳號登入' })}
                             {activeTab === 'external' && (
                                 <div className="absolute bottom-0 left-0 w-full h-0.5 bg-pine-800 rounded-t-full"></div>
                             )}
@@ -157,7 +159,7 @@ const LoginPage = ({ onLogin, onBack }) => {
                                 }`}
                             onClick={() => setActiveTab('password')}
                         >
-                            外部帳號登入
+                            {t('auth.external_login', { defaultValue: '外部帳號登入' })}
                             {activeTab === 'password' && (
                                 <div className="absolute bottom-0 left-0 w-full h-0.5 bg-pine-800 rounded-t-full"></div>
                             )}
@@ -170,17 +172,17 @@ const LoginPage = ({ onLogin, onBack }) => {
                     {!isRegistering && !isForgotPassword && activeTab === 'external' && (
                         <div className="flex flex-col items-center justify-center h-full space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <p className="text-pine-600 text-center mb-4">
-                                中央大學學生請使用 Portal 帳號登入
+                                {t('auth.ncu_hint', { defaultValue: '中央大學學生請使用 Portal 帳號登入' })}
                             </p>
                             <button
-                                onClick={() => window.location.href = 'http://localhost:3000/api/auth/portal'}
+                                onClick={() => window.location.href = `${import.meta.env.VITE_API_URL}/api/auth/portal`}
                                 className="w-full py-3.5 px-6 bg-[#007EA8] hover:bg-[#006A8E] text-white rounded-xl font-medium shadow-lg shadow-blue-900/10 transition-all hover:scale-[1.02] flex items-center justify-center gap-3 group"
                             >
-                                <span className="text-lg">中央大學 PORTAL</span>
+                                <span className="text-lg">{t('auth.portal_button', { defaultValue: '中央大學 PORTAL' })}</span>
                                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                             </button>
                             <div className="text-xs text-gray-400 mt-8 text-center">
-                                透過 Portal 認證您的學生身分<br />安全、快速、无需額外註冊
+                                {t('auth.portal_desc', { defaultValue: '透過 Portal 認證您的學生身分，安全、快速、無需額外註冊' })}
                             </div>
                         </div>
                     )}
@@ -188,7 +190,7 @@ const LoginPage = ({ onLogin, onBack }) => {
                     {(!isRegistering && !isForgotPassword && activeTab === 'password') && (
                         <form onSubmit={handleSubmit} className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-pine-700 ml-1">學號 / Email</label>
+                                <label className="text-sm font-medium text-pine-700 ml-1">{t('auth.id_email', { defaultValue: '學號 / Email' })}</label>
                                 <div className="relative">
                                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-pine-400">
                                         <User size={18} />
@@ -196,7 +198,7 @@ const LoginPage = ({ onLogin, onBack }) => {
                                     <input
                                         type="text"
                                         name="email"
-                                        placeholder="輸入您的 學號 或 Email"
+                                        placeholder={t('auth.id_placeholder', { defaultValue: '輸入您的 學號 或 Email' })}
                                         className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pine-500/20 focus:border-pine-500 outline-none transition-all text-pine-900"
                                         value={formData.email}
                                         onChange={handleInputChange}
@@ -205,7 +207,7 @@ const LoginPage = ({ onLogin, onBack }) => {
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-pine-700 ml-1">密碼</label>
+                                <label className="text-sm font-medium text-pine-700 ml-1">{t('auth.password', { defaultValue: '密碼' })}</label>
                                 <div className="relative">
                                     <div className="absolute left-4 top-1/2 -translate-y-1/2 text-pine-400">
                                         <Lock size={18} />
@@ -213,7 +215,7 @@ const LoginPage = ({ onLogin, onBack }) => {
                                     <input
                                         type={showPassword ? "text" : "password"}
                                         name="password"
-                                        placeholder="輸入密碼"
+                                        placeholder={t('auth.password_placeholder', { defaultValue: '輸入密碼' })}
                                         className="w-full pl-11 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pine-500/20 focus:border-pine-500 outline-none transition-all text-pine-900"
                                         value={formData.password}
                                         onChange={handleInputChange}
@@ -231,7 +233,7 @@ const LoginPage = ({ onLogin, onBack }) => {
                             <div className="flex items-center justify-between text-sm">
                                 <label className="flex items-center gap-2 cursor-pointer text-gray-600 hover:text-pine-700">
                                     <input type="checkbox" className="rounded border-gray-300 text-pine-600 focus:ring-pine-500" />
-                                    記住我
+                                    {t('auth.remember_me', { defaultValue: '記住我' })}
                                 </label>
                                 <button
                                     type="button"
@@ -241,7 +243,7 @@ const LoginPage = ({ onLogin, onBack }) => {
                                     }}
                                     className="text-pine-600 hover:text-pine-800 font-medium hover:underline"
                                 >
-                                    忘記密碼？
+                                    {t('auth.forgot_password', { defaultValue: '忘記密碼？' })}
                                 </button>
                             </div>
 
@@ -256,7 +258,7 @@ const LoginPage = ({ onLogin, onBack }) => {
                                 disabled={loading}
                                 className="w-full py-3.5 bg-pine-800 hover:bg-pine-900 text-white rounded-xl font-medium shadow-lg shadow-pine-900/10 transition-all hover:scale-[1.02] mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {loading ? '登入中...' : '登入'}
+                                {loading ? t('auth.logging_in', { defaultValue: '登入中...' }) : t('auth.login', { defaultValue: '登入' })}
                             </button>
 
                             <div className="pt-4 text-center">
@@ -265,7 +267,7 @@ const LoginPage = ({ onLogin, onBack }) => {
                                     onClick={() => setIsRegistering(true)}
                                     className="text-pine-600 hover:text-pine-800 font-medium hover:underline text-sm"
                                 >
-                                    註冊新帳號
+                                    {t('auth.register_link', { defaultValue: '註冊新帳號' })}
                                 </button>
 
                             </div>
@@ -279,9 +281,9 @@ const LoginPage = ({ onLogin, onBack }) => {
                                     <div className="w-16 h-16 bg-forest-100 text-forest-600 rounded-full flex items-center justify-center mx-auto mb-4">
                                         <Mail size={32} />
                                     </div>
-                                    <h3 className="text-xl font-medium text-pine-900">信件已寄出</h3>
+                                    <h3 className="text-xl font-medium text-pine-900">{t('auth.reset_sent_title', { defaultValue: '信件已寄出' })}</h3>
                                     <p className="text-pine-600 text-sm leading-relaxed">
-                                        如果此信箱存在於系統中，我們已經將密碼重設連結寄到您的信箱（為了測試，請查看後端終端機 Console）。
+                                        {t('auth.reset_sent_desc', { defaultValue: '如果此信箱存在於系統中，我們已經將密碼重設連結寄到您的信箱（為了測試，請查看後端終端機 Console）。' })}
                                     </p>
                                     <button
                                         type="button"
@@ -292,13 +294,13 @@ const LoginPage = ({ onLogin, onBack }) => {
                                         }}
                                         className="w-full py-3.5 bg-pine-100 hover:bg-pine-200 text-pine-800 rounded-xl font-medium transition-all mt-4"
                                     >
-                                        返回登入
+                                        {t('auth.back_to_login', { defaultValue: '返回登入' })}
                                     </button>
                                 </div>
                             ) : (
                                 <>
                                     <p className="text-pine-600 text-sm text-center mb-6">
-                                        請輸入您註冊時使用的電子郵件，我們將發送密碼重設連結給您。
+                                        {t('auth.reset_prompt', { defaultValue: '請輸入您註冊時使用的電子郵件，我們將發送密碼重設連結給您。' })}
                                     </p>
                                     <div className="space-y-2">
                                         <label className="text-sm font-medium text-pine-700 ml-1">Email</label>
@@ -310,7 +312,7 @@ const LoginPage = ({ onLogin, onBack }) => {
                                                 type="email"
                                                 name="email"
                                                 required
-                                                placeholder="輸入您的信箱"
+                                                placeholder={t('auth.id_placeholder', { defaultValue: '輸入您的信箱' })}
                                                 className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pine-500/20 focus:border-pine-500 outline-none transition-all text-pine-900"
                                                 value={formData.email}
                                                 onChange={handleInputChange}
@@ -329,7 +331,7 @@ const LoginPage = ({ onLogin, onBack }) => {
                                         disabled={loading || !formData.email}
                                         className="w-full py-3.5 bg-pine-800 hover:bg-pine-900 text-white rounded-xl font-medium shadow-lg shadow-pine-900/10 transition-all hover:scale-[1.02] mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        {loading ? '發送中...' : '發送重設連結'}
+                                        {loading ? t('auth.sending', { defaultValue: '發送中...' }) : t('auth.reset_password', { defaultValue: '發送重設連結' })}
                                     </button>
 
                                     <div className="pt-4 text-center">
@@ -338,7 +340,7 @@ const LoginPage = ({ onLogin, onBack }) => {
                                             onClick={() => setIsForgotPassword(false)}
                                             className="text-gray-500 hover:text-pine-800 text-sm"
                                         >
-                                            取消並返回
+                                            {t('auth.cancel', { defaultValue: '取消並返回' })}
                                         </button>
                                     </div>
                                 </>
@@ -353,11 +355,11 @@ const LoginPage = ({ onLogin, onBack }) => {
                                     <div className="w-16 h-16 bg-forest-100 text-forest-600 rounded-full flex items-center justify-center mx-auto mb-4">
                                         <Mail size={32} />
                                     </div>
-                                    <h3 className="text-xl font-medium text-pine-900">註冊幾乎完成了！</h3>
+                                    <h3 className="text-xl font-medium text-pine-900">{t('auth.register_step_title', { defaultValue: '註冊幾乎完成了！' })}</h3>
                                     <p className="text-pine-600 text-sm leading-relaxed">
-                                        一封驗證信件已經發送至您的信箱：<br />
+                                        {t('auth.register_step_desc', { defaultValue: '一封驗證信件已經發送至您的信箱：' })}<br />
                                         <span className="font-semibold">{formData.email}</span><br /><br />
-                                        請點擊信件內的連結來完成您的帳號開通。
+                                        {t('auth.register_step_hint', { defaultValue: '請點擊信件內的連結來完成您的帳號開通。' })}
                                     </p>
                                     <button
                                         type="button"
@@ -376,13 +378,13 @@ const LoginPage = ({ onLogin, onBack }) => {
                                         }}
                                         className="w-full py-3.5 bg-pine-100 hover:bg-pine-200 text-pine-800 rounded-xl font-medium transition-all mt-4"
                                     >
-                                        返回登入
+                                        {t('auth.back_to_login', { defaultValue: '返回登入' })}
                                     </button>
                                 </div>
                             ) : (
                                 <>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-pine-700 ml-1">姓名</label>
+                                        <label className="text-sm font-medium text-pine-700 ml-1">{t('auth.name', { defaultValue: '姓名' })}</label>
                                         <div className="relative">
                                             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-pine-400">
                                                 <User size={18} />
@@ -390,7 +392,7 @@ const LoginPage = ({ onLogin, onBack }) => {
                                             <input
                                                 type="text"
                                                 name="name"
-                                                placeholder="您的稱呼"
+                                                placeholder={t('auth.name_placeholder', { defaultValue: '您的稱呼' })}
                                                 className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pine-500/20 focus:border-pine-500 outline-none transition-all text-pine-900"
                                                 value={formData.name}
                                                 onChange={handleInputChange}
@@ -398,7 +400,7 @@ const LoginPage = ({ onLogin, onBack }) => {
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-pine-700 ml-1">學號</label>
+                                        <label className="text-sm font-medium text-pine-700 ml-1">{t('auth.student_id', { defaultValue: '學號' })}</label>
                                         <div className="relative">
                                             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-pine-400">
                                                 <IdCard size={18} />
@@ -432,7 +434,7 @@ const LoginPage = ({ onLogin, onBack }) => {
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-pine-700 ml-1">系所</label>
+                                        <label className="text-sm font-medium text-pine-700 ml-1">{t('auth.dept', { defaultValue: '系所' })}</label>
                                         <div className="relative">
                                             <select
                                                 name="department"
@@ -440,20 +442,20 @@ const LoginPage = ({ onLogin, onBack }) => {
                                                 value={formData.department}
                                                 onChange={handleInputChange}
                                             >
-                                                <option value="">選擇系所</option>
-                                                <option value="資工系">資工系</option>
-                                                <option value="資管系">資管系</option>
-                                                <option value="電機系">電機系</option>
-                                                <option value="數學系">數學系</option>
-                                                <option value="企管系">企管系</option>
-                                                <option value="經濟系">經濟系</option>
+                                                <option value="">{t('auth.select_dept', { defaultValue: '選擇系所' })}</option>
+                                                <option value="資工系">{t('departments.資工系', { defaultValue: '資工系' })}</option>
+                                                <option value="資管系">{t('departments.資管系', { defaultValue: '資管系' })}</option>
+                                                <option value="電機系">{t('departments.電機系', { defaultValue: '電機系' })}</option>
+                                                <option value="數學系">{t('departments.數學系', { defaultValue: '數學系' })}</option>
+                                                <option value="企管系">{t('departments.企管系', { defaultValue: '企管系' })}</option>
+                                                <option value="經濟系">{t('departments.經濟系', { defaultValue: '經濟系' })}</option>
                                             </select>
                                             <div className="absolute right-4 top-1/2 -translate-y-1/2 text-pine-400 pointer-events-none">▼</div>
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
-                                            <label className="text-sm font-medium text-pine-700 ml-1">電話</label>
+                                            <label className="text-sm font-medium text-pine-700 ml-1">{t('auth.phone', { defaultValue: '電話' })}</label>
                                             <input
                                                 type="tel"
                                                 name="phone"
@@ -464,22 +466,22 @@ const LoginPage = ({ onLogin, onBack }) => {
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <label className="text-sm font-medium text-pine-700 ml-1">性別</label>
+                                            <label className="text-sm font-medium text-pine-700 ml-1">{t('auth.gender', { defaultValue: '性別' })}</label>
                                             <select
                                                 name="gender"
                                                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pine-500/20 focus:border-pine-500 outline-none transition-all text-pine-900"
                                                 value={formData.gender}
                                                 onChange={handleInputChange}
                                             >
-                                                <option value="">選擇</option>
-                                                <option value="male">男</option>
-                                                <option value="female">女</option>
-                                                <option value="other">其他</option>
+                                                <option value="">{t('auth.select', { defaultValue: '選擇' })}</option>
+                                                <option value="male">{t('auth.male', { defaultValue: '男' })}</option>
+                                                <option value="female">{t('auth.female', { defaultValue: '女' })}</option>
+                                                <option value="other">{t('auth.other', { defaultValue: '其他' })}</option>
                                             </select>
                                         </div>
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-pine-700 ml-1">密碼</label>
+                                        <label className="text-sm font-medium text-pine-700 ml-1">{t('auth.password', { defaultValue: '密碼' })}</label>
                                         <div className="relative">
                                             <div className="absolute left-4 top-1/2 -translate-y-1/2 text-pine-400">
                                                 <Lock size={18} />
@@ -487,7 +489,7 @@ const LoginPage = ({ onLogin, onBack }) => {
                                             <input
                                                 type={showPassword ? "text" : "password"}
                                                 name="password"
-                                                placeholder="設定密碼"
+                                                placeholder={t('auth.password_placeholder', { defaultValue: '設定密碼' })}
                                                 className="w-full pl-11 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pine-500/20 focus:border-pine-500 outline-none transition-all text-pine-900"
                                                 value={formData.password}
                                                 onChange={handleInputChange}
@@ -506,7 +508,7 @@ const LoginPage = ({ onLogin, onBack }) => {
                                         disabled={loading}
                                         className="w-full py-3.5 bg-pine-800 hover:bg-pine-900 text-white rounded-xl font-medium shadow-lg shadow-pine-900/10 transition-all hover:scale-[1.02] mt-6 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        {loading ? '註冊中...' : '確認註冊'}
+                                        {loading ? t('auth.registering', { defaultValue: '註冊中...' }) : t('auth.confirm_register', { defaultValue: '確認註冊' })}
                                     </button>
 
                                     <div className="pt-4 text-center">
@@ -527,7 +529,7 @@ const LoginPage = ({ onLogin, onBack }) => {
                                             }}
                                             className="text-gray-500 hover:text-pine-800 text-sm"
                                         >
-                                            返回登入
+                                            {t('auth.back_to_login', { defaultValue: '返回登入' })}
                                         </button>
                                     </div>
                                 </>

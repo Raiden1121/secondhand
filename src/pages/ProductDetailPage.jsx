@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Heart, Star, MapPin, Flag, ArrowLeft, CheckCircle, AlertCircle, Share2, X, ChevronLeft, ChevronRight, ShoppingBag } from 'lucide-react';
 import { meetingPoints } from '../data/mock';
+import { useTranslation } from 'react-i18next';
 
 const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigateToChat, productBackPage, onClearBackPage, onNavigateToSeller }) => {
+    const { t } = useTranslation();
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -22,7 +24,7 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
     useEffect(() => {
         const fetchProduct = async () => {
             try {
-                const response = await fetch(`http://localhost:3000/api/products/${productId}`);
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/products/${productId}`);
                 if (!response.ok) throw new Error('商品不存在');
                 const data = await response.json();
                 setProduct(data);
@@ -30,7 +32,7 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
                 // Fetch seller rating
                 if (data.sellerId) {
                     try {
-                        const ratingRes = await fetch(`http://localhost:3000/api/ratings/user/${data.sellerId}`);
+                        const ratingRes = await fetch(`${import.meta.env.VITE_API_URL}/api/ratings/user/${data.sellerId}`);
                         if (ratingRes.ok) {
                             const ratingData = await ratingRes.json();
                             setSellerRating({
@@ -78,7 +80,7 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
             if (!token || !productId) return;
 
             try {
-                const response = await fetch(`http://localhost:3000/api/favorites/check/${productId}`, {
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/favorites/check/${productId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (response.ok) {
@@ -99,7 +101,7 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
             if (!token || !productId) return;
 
             try {
-                const response = await fetch(`http://localhost:3000/api/transactions/product/${productId}/status`, {
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/transactions/product/${productId}/status`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (response.ok) {
@@ -116,7 +118,7 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
     const handlePurchaseRequest = async () => {
         const token = localStorage.getItem('token');
         if (!token) {
-            showToast('error', '請先登入');
+            showToast('error', t('post.login_required', { defaultValue: '請先登入' }));
             setCurrentPage('login');
             return;
         }
@@ -124,13 +126,13 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
         // Check if user is the seller
         const userId = JSON.parse(atob(token.split('.')[1])).id;
         if (product?.sellerId === userId) {
-            showToast('error', '不能購買自己的商品');
+            showToast('error', t('product.own_product_error', { defaultValue: '不能購買自己的商品' }));
             return;
         }
 
         setPurchaseLoading(true);
         try {
-            const response = await fetch('http://localhost:3000/api/transactions', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/transactions`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -141,14 +143,14 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
 
             if (response.ok) {
                 setHasPendingPurchase(true);
-                showToast('success', '已發送購買請求給賣家');
+                showToast('success', t('product.purchase_request_sent', { defaultValue: '已發送購買請求給賣家' }));
             } else {
                 const err = await response.json();
-                showToast('error', err.message || '發送購買請求失敗');
+                showToast('error', err.message || t('product.purchase_request_failed', { defaultValue: '發送購買請求失敗' }));
             }
         } catch (err) {
             console.error('Error creating purchase request:', err);
-            showToast('error', '發送購買請求失敗');
+            showToast('error', t('product.purchase_request_failed', { defaultValue: '發送購買請求失敗' }));
         } finally {
             setPurchaseLoading(false);
         }
@@ -157,14 +159,14 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
     const toggleFavorite = async () => {
         const token = localStorage.getItem('token');
         if (!token) {
-            showToast('error', '請先登入');
+            showToast('error', t('post.login_required', { defaultValue: '請先登入' }));
             setCurrentPage('login');
             return;
         }
 
         try {
             const method = isFavorited ? 'DELETE' : 'POST';
-            const response = await fetch(`http://localhost:3000/api/favorites/${productId}`, {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/favorites/${productId}`, {
                 method,
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -184,10 +186,10 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
         try {
             const url = `${window.location.origin}/#product-${productId}`;
             await navigator.clipboard.writeText(url);
-            showToast('success', '連結已複製到剪貼簿');
+            showToast('success', t('product.share_link_copied', { defaultValue: '連結已複製到剪貼簿' }));
         } catch (err) {
             console.error('Failed to copy:', err);
-            showToast('error', '複製失敗，請稍後再試');
+            showToast('error', t('product.share_failed', { defaultValue: '複製失敗，請稍後再試' }));
         }
     };
 
@@ -199,14 +201,14 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
 
         const token = localStorage.getItem('token');
         if (!token) {
-            showToast('error', '請先登入');
+            showToast('error', t('post.login_required', { defaultValue: '請先登入' }));
             setCurrentPage('login');
             return;
         }
 
         setSubmitting(true);
         try {
-            const response = await fetch('http://localhost:3000/api/reports', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/reports`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -216,7 +218,7 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
             });
 
             if (response.ok) {
-                showToast('success', '檢舉已送出，我們會盡快處理');
+                showToast('success', t('product.report_sent', { defaultValue: '檢舉已送出，我們會盡快處理' }));
                 setShowReportModal(false);
                 setReportReason('');
             } else {
@@ -225,7 +227,7 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
             }
         } catch (err) {
             console.error('Error reporting:', err);
-            showToast('error', '系統錯誤，請稍後再試');
+            showToast('error', t('post.error', { defaultValue: '系統錯誤，請稍後再試' }));
         } finally {
             setSubmitting(false);
         }
@@ -234,13 +236,13 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
     const handleStartChat = async () => {
         const token = localStorage.getItem('token');
         if (!token) {
-            showToast('error', '請先登入');
+            showToast('error', t('post.login_required', { defaultValue: '請先登入' }));
             setCurrentPage('login');
             return;
         }
 
         try {
-            const response = await fetch('http://localhost:3000/api/chat/initiate', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/chat/initiate`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -265,16 +267,16 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
                 }
             } else {
                 const err = await response.json();
-                showToast('error', err.message || '無法開啟對話');
+                showToast('error', err.message || t('auth.operation_failed', { defaultValue: '無法開啟對話' }));
             }
         } catch (error) {
             console.error('Error starting chat:', error);
-            showToast('error', '系統錯誤，請稍後再試');
+            showToast('error', t('post.error', { defaultValue: '系統錯誤，請稍後再試' }));
         }
     };
 
-    if (loading) return <div className="p-10 text-center text-pine-600">載入中...</div>;
-    if (error || !product) return <div className="p-10 text-center text-pine-600">找不到商品</div>;
+    if (loading) return <div className="p-10 text-center text-pine-600">{t('home.loading', { defaultValue: '載入中...' })}</div>;
+    if (error || !product) return <div className="p-10 text-center text-pine-600">{t('product.detail_not_found', { defaultValue: '找不到商品' })}</div>;
 
     // Parse images
     let images = product.images;
@@ -291,11 +293,11 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
     };
 
     const reportReasons = [
-        '商品資訊不實',
-        '疑似詐騙',
-        '違禁品或違法商品',
-        '不當內容',
-        '其他'
+        t('reports.商品資訊不實', { defaultValue: '商品資訊不實' }),
+        t('reports.疑似詐騙', { defaultValue: '疑似詐騙' }),
+        t('reports.違禁品或違法商品', { defaultValue: '違禁品或違法商品' }),
+        t('reports.不當內容', { defaultValue: '不當內容' }),
+        t('reports.其他', { defaultValue: '其他' })
     ];
 
     return (
@@ -347,7 +349,7 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
                         >
                             {currentImage ? (
                                 <img
-                                    src={`http://localhost:3000${currentImage}`}
+                                    src={currentImage.startsWith('/uploads/') ? `${import.meta.env.VITE_API_URL}${currentImage}` : currentImage}
                                     alt={product.title}
                                     className="w-full h-full object-cover"
                                 />
@@ -387,7 +389,7 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
                                                     }`}
                                             >
                                                 <img
-                                                    src={`http://localhost:3000${img}`}
+                                                    src={img.startsWith('/uploads/') ? `${import.meta.env.VITE_API_URL}${img}` : img}
                                                     alt={`${product.title} ${idx + 1}`}
                                                     className="w-full h-full object-cover"
                                                 />
@@ -431,10 +433,10 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <span className="bg-forest-100 text-forest-800 px-3 py-1 rounded-full text-xs font-medium">
-                                        {product.category}
+                                        {t(`categories.${product.category}`, { defaultValue: product.category })}
                                     </span>
                                     <span className="text-pine-500 text-xs">
-                                        {product.condition}
+                                        {t(`conditions.${product.condition}`, { defaultValue: product.condition })}
                                     </span>
                                 </div>
                             </div>
@@ -443,10 +445,10 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
                                 <span className="text-3xl md:text-4xl font-light text-pine-800">
                                     NT$ {product.price?.toLocaleString?.() || product.price}
                                 </span>
-                                <span className="text-sm text-pine-400 font-light">{product.negotiable ? '可議價' : '不議價'}</span>
+                                <span className="text-sm text-pine-400 font-light">{product.negotiable ? t('product.negotiable', { defaultValue: '可議價' }) : t('product.not_negotiable', { defaultValue: '不議價' })}</span>
                             </div>
                             {product.deliveryMethod?.includes('寄送') && (
-                                <span className="inline-block text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded-full border border-amber-200 w-fit">可寄送</span>
+                                <span className="inline-block text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded-full border border-amber-200 w-fit">{t('product.shippable', { defaultValue: '可寄送' })}</span>
                             )}
 
                             <div className="border-t border-pine-100 pt-3 flex items-center justify-between">
@@ -463,7 +465,7 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
                                     <div className="w-8 h-8 bg-cream-100 rounded-full flex items-center justify-center text-base overflow-hidden">
                                         {product.seller?.avatar && product.seller.avatar.trim() !== '' && !sellerAvatarError ? (
                                             <img
-                                                src={`http://localhost:3000${product.seller.avatar}`}
+                                                src={`${import.meta.env.VITE_API_URL}${product.seller.avatar}`}
                                                 alt={product.seller.name}
                                                 className="w-full h-full object-cover"
                                                 onError={() => setSellerAvatarError(true)}
@@ -473,8 +475,8 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
                                         )}
                                     </div>
                                     <div>
-                                        <span className="text-pine-800 font-medium block text-sm">{product.seller?.name || '未知賣家'}</span>
-                                        <span className="text-xs text-pine-500">{product.seller?.department}</span>
+                                        <span className="text-pine-800 font-medium block text-sm">{product.seller?.name || t('profile.unknown_user', { defaultValue: '未知賣家' })}</span>
+                                        <span className="text-xs text-pine-500">{product.seller?.department ? t(`departments.${product.seller.department}`, { defaultValue: product.seller.department }) : ''}</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-1">
@@ -487,7 +489,7 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
 
                         {/* Description - Limited height with scroll */}
                         <div className="flex-1 min-h-0 border-t border-pine-100 mt-3 pt-3 flex flex-col max-h-56">
-                            <h3 className="text-sm font-medium text-pine-600 mb-2 flex-shrink-0">關於這件物品</h3>
+                            <h3 className="text-sm font-medium text-pine-600 mb-2 flex-shrink-0">{t('product.about_item', { defaultValue: '關於這件物品' })}</h3>
                             <div className="flex-1 overflow-y-auto overflow-x-hidden pr-2 border border-pine-100 rounded-lg p-2">
                                 <p className="text-pine-700 leading-relaxed whitespace-pre-line break-all text-sm">
                                     {product.description}
@@ -501,7 +503,7 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
                                 <div className="border-t border-pine-100 pt-3">
                                     <h3 className="text-sm font-medium text-pine-600 mb-2 flex items-center gap-2">
                                         <MapPin size={16} className="text-pine-400" />
-                                        建議見面地點
+                                        {t('product.suggested_locations', { defaultValue: '建議見面地點' })}
                                     </h3>
                                     <div className="flex flex-wrap gap-2">
                                         {(product.location
@@ -521,7 +523,7 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
                                     onClick={handleStartChat}
                                     className="flex-1 bg-pine-800 text-white py-3 rounded-2xl font-medium hover:bg-pine-700 transition shadow-md hover:shadow-lg transform active:scale-[0.98] text-sm"
                                 >
-                                    開始對話
+                                    {t('product.start_chat', { defaultValue: '開始對話' })}
                                 </button>
                                 <button
                                     onClick={handlePurchaseRequest}
@@ -532,7 +534,7 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
                                         }`}
                                 >
                                     <ShoppingBag size={16} />
-                                    {purchaseLoading ? '發送中...' : hasPendingPurchase ? '已發送請求' : product?.reserved ? '已保留' : '確認購買'}
+                                    {purchaseLoading ? t('product.status_pending', { defaultValue: '發送中...' }) : hasPendingPurchase ? t('product.requested', { defaultValue: '已發送請求' }) : product?.reserved ? t('product.reserved', { defaultValue: '已保留' }) : t('product.confirm_purchase', { defaultValue: '確認購買' })}
                                 </button>
                                 <button
                                     onClick={() => setShowReportModal(true)}
@@ -551,8 +553,8 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl">
                         <div className="p-6 border-b border-pine-100">
-                            <h3 className="text-xl font-medium text-pine-900">檢舉此商品</h3>
-                            <p className="text-sm text-pine-500 mt-1">請選擇檢舉原因</p>
+                            <h3 className="text-xl font-medium text-pine-900">{t('product.report_product', { defaultValue: '檢舉此商品' })}</h3>
+                            <p className="text-sm text-pine-500 mt-1">{t('product.report_reason_title', { defaultValue: '請選擇檢舉原因' })}</p>
                         </div>
                         <div className="p-6 space-y-3">
                             {reportReasons.map(reason => (
@@ -576,14 +578,14 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
                                 }}
                                 className="flex-1 py-3 px-4 rounded-xl border border-pine-200 text-pine-600 hover:bg-cream-50 transition"
                             >
-                                取消
+                                {t('chat.cancel', { defaultValue: '取消' })}
                             </button>
                             <button
                                 onClick={handleReport}
                                 disabled={!reportReason || submitting}
                                 className="flex-1 py-3 px-4 rounded-xl bg-red-500 text-white hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                {submitting ? '送出中...' : '送出檢舉'}
+                                {submitting ? t('product.status_pending', { defaultValue: '送出中...' }) : t('product.report_product', { defaultValue: '送出檢舉' })}
                             </button>
                         </div>
                     </div>
@@ -626,8 +628,8 @@ const ProductDetailPage = ({ productId, setCurrentPage, onChatCreated, onNavigat
 
                     {/* Zoomed Image */}
                     <img
-                        src={`http://localhost:3000${currentImage}`}
-                        alt={product.title}
+                        src={currentImage.startsWith('/uploads/') ? `${import.meta.env.VITE_API_URL}${currentImage}` : currentImage}
+                        alt="Zoomed Product view"
                         className="max-w-[95vw] max-h-[95vh] min-w-[60vw] min-h-[60vh] object-contain"
                         onClick={(e) => e.stopPropagation()}
                     />

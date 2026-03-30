@@ -19,6 +19,7 @@ import {
     rectSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useTranslation } from 'react-i18next';
 
 const SortablePhoto = ({ url, index, onRemove }) => {
     const {
@@ -55,6 +56,7 @@ const SortablePhoto = ({ url, index, onRemove }) => {
 };
 
 const PostPage = ({ setCurrentPage }) => {
+    const { t } = useTranslation();
     const [title, setTitle] = useState('');
     const [category, setCategory] = useState('教科書與書籍');
     const [price, setPrice] = useState('');
@@ -122,7 +124,7 @@ const PostPage = ({ setCurrentPage }) => {
 
         const totalImages = images.length + files.length;
         if (totalImages > 5) {
-            showToast('error', '最多只能上傳 5 張照片');
+            showToast('error', t('post.max_images_hint', { defaultValue: '最多只能上傳 5 張照片' }));
             return;
         }
 
@@ -167,7 +169,7 @@ const PostPage = ({ setCurrentPage }) => {
             }
         } catch (error) {
             console.error('Error processing images:', error);
-            showToast('error', '圖片處理失敗，請重試');
+            showToast('error', t('post.error', { defaultValue: '圖片處理失敗，請重試' }));
         } finally {
             setIsConverting(false);
         }
@@ -233,12 +235,12 @@ const PostPage = ({ setCurrentPage }) => {
     const validate = () => {
         const newErrors = {};
 
-        if (images.length === 0) newErrors.images = '請上傳至少一張照片';
-        if (!title.trim()) newErrors.title = '請輸入物品名稱';
-        if (!price || parseInt(price) < 0) newErrors.price = '請輸入有效價格';
-        if (!deliveryMethod) newErrors.deliveryMethod = '請選擇至少一種交易方式';
-        if (deliveryMethod.includes('面交') && selectedLocations.length === 0) newErrors.location = '請選擇至少一個面交地點';
-        if (!description.trim()) newErrors.description = '請輸入物品說明';
+        if (images.length === 0) newErrors.images = t('post.validation.min_one_photo', { defaultValue: '請上傳至少一張照片' });
+        if (!title.trim()) newErrors.title = t('post.validation.no_title', { defaultValue: '請輸入物品名稱' });
+        if (!price || parseInt(price) < 0) newErrors.price = t('post.validation.invalid_price', { defaultValue: '請輸入有效價格' });
+        if (!deliveryMethod) newErrors.deliveryMethod = t('post.validation.no_delivery', { defaultValue: '請選擇至少一種交易方式' });
+        if (deliveryMethod.includes('面交') && selectedLocations.length === 0) newErrors.location = t('post.validation.no_location', { defaultValue: '請選擇至少一個面交地點' });
+        if (!description.trim()) newErrors.description = t('post.validation.no_desc', { defaultValue: '請輸入物品說明' });
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -272,7 +274,7 @@ const PostPage = ({ setCurrentPage }) => {
 
         const token = localStorage.getItem('token');
         if (!token) {
-            showToast('error', '請先登入');
+            showToast('error', t('post.login_required', { defaultValue: '請先登入' }));
             if (setCurrentPage) setCurrentPage('login');
             return;
         }
@@ -294,7 +296,7 @@ const PostPage = ({ setCurrentPage }) => {
                 formData.append('images', file);
             });
 
-            const response = await fetch('http://localhost:3000/api/products', {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/products`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`
@@ -303,7 +305,7 @@ const PostPage = ({ setCurrentPage }) => {
             });
 
             if (response.ok) {
-                showToast('success', '發布成功！');
+                showToast('success', t('post.success', { defaultValue: '發布成功！' }));
                 setTitle('');
                 setCategory('3C');
                 setPrice('');
@@ -319,11 +321,11 @@ const PostPage = ({ setCurrentPage }) => {
                 }, 1500);
             } else {
                 const err = await response.json();
-                showToast('error', err.message || '發布失敗，請稍後再試');
+                showToast('error', err.message || t('post.error', { defaultValue: '發布失敗，請稍後再試' }));
             }
         } catch (error) {
             console.error('Error posting product:', error);
-            showToast('error', '系統錯誤，請稍後再試');
+            showToast('error', t('post.error', { defaultValue: '系統錯誤，請稍後再試' }));
         } finally {
             setLoading(false);
         }
@@ -340,13 +342,13 @@ const PostPage = ({ setCurrentPage }) => {
                 </div>
             )}
 
-            <h2 className="text-2xl md:text-3xl font-light text-pine-900 py-6 tracking-wide">分享物品</h2>
+            <h2 className="text-2xl md:text-3xl font-light text-pine-900 py-6 tracking-wide">{t('post.title', { defaultValue: '分享物品' })}</h2>
             <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 md:p-8 space-y-6 shadow-sm border border-pine-50">
 
                 {/* Image Upload */}
                 <div>
                     <label className="block text-sm font-medium text-pine-600 mb-3">
-                        照片 <span className="text-red-500">*</span>
+                        {t('post.images', { defaultValue: '照片' })} <span className="text-red-500">*</span>
                     </label>
                     <input
                         type="file"
@@ -384,13 +386,13 @@ const PostPage = ({ setCurrentPage }) => {
                                         {isConverting ? (
                                             <>
                                                 <div className="w-6 h-6 border-2 border-pine-300 border-t-pine-600 rounded-full animate-spin" />
-                                                <p className="text-pine-400 mt-1 text-xs">處理中...</p>
+                                                <p className="text-pine-400 mt-1 text-xs">{t('post.processing', { defaultValue: '處理中...' })}</p>
                                             </>
                                         ) : (
                                             <>
                                                 <Plus size={24} className="text-pine-300 group-hover:text-pine-500 transition" />
                                                 <p className="text-pine-400 mt-1 text-xs group-hover:text-pine-600">
-                                                    {previews.length === 0 ? '上傳照片' : '新增'}
+                                                    {previews.length === 0 ? t('post.upload_photo', { defaultValue: '上傳照片' }) : t('post.add_more', { defaultValue: '新增' })}
                                                 </p>
                                             </>
                                         )}
@@ -400,20 +402,20 @@ const PostPage = ({ setCurrentPage }) => {
                         </SortableContext>
                     </DndContext>
                     {errors.images && <p className="text-red-500 text-sm mt-2">{errors.images}</p>}
-                    <p className="text-pine-400 text-xs mt-2">最多 5 張照片</p>
+                    <p className="text-pine-400 text-xs mt-2">{t('post.max_images_hint', { defaultValue: '最多 5 張照片' })}</p>
                 </div>
 
                 {/* Title */}
                 <div>
                     <label className="block text-sm font-medium text-pine-600 mb-3">
-                        名稱 <span className="text-red-500">*</span>
+                        {t('post.name', { defaultValue: '名稱' })} <span className="text-red-500">*</span>
                     </label>
                     <input
                         type="text"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                         className={`w-full p-3 border rounded-2xl text-pine-800 focus:outline-none focus:border-forest-400 focus:ring-1 focus:ring-forest-200 transition bg-white/50 ${errors.title ? 'border-red-300' : 'border-pine-200'}`}
-                        placeholder="給物品一個名字"
+                        placeholder={t('post.name_placeholder', { defaultValue: '給物品一個名字' })}
                     />
                     {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
                 </div>
@@ -421,7 +423,7 @@ const PostPage = ({ setCurrentPage }) => {
                 {/* Category */}
                 <div>
                     <label className="block text-sm font-medium text-pine-600 mb-3">
-                        分類 <span className="text-red-500">*</span>
+                        {t('post.category', { defaultValue: '分類' })} <span className="text-red-500">*</span>
                     </label>
                     <select
                         value={category}
@@ -429,7 +431,7 @@ const PostPage = ({ setCurrentPage }) => {
                         className="w-full p-3 border border-pine-200 rounded-2xl text-pine-800 focus:outline-none focus:border-forest-400 focus:ring-1 focus:ring-forest-200 transition bg-white/50"
                     >
                         {categories.filter(c => c !== '全部').map(cat => (
-                            <option key={cat} value={cat}>{cat}</option>
+                            <option key={cat} value={cat}>{t(`categories.${cat}`, { defaultValue: cat })}</option>
                         ))}
                     </select>
                 </div>
@@ -438,7 +440,7 @@ const PostPage = ({ setCurrentPage }) => {
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-pine-600 mb-3">
-                            價格 <span className="text-red-500">*</span>
+                            {t('post.price', { defaultValue: '價格' })} <span className="text-red-500">*</span>
                         </label>
                         <div className="relative">
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-pine-400">NT$</span>
@@ -455,7 +457,7 @@ const PostPage = ({ setCurrentPage }) => {
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-pine-600 mb-3">
-                            狀況 <span className="text-red-500">*</span>
+                            {t('post.condition', { defaultValue: '狀況' })} <span className="text-red-500">*</span>
                         </label>
                         <select
                             value={condition}
@@ -463,7 +465,7 @@ const PostPage = ({ setCurrentPage }) => {
                             className="w-full p-3 border border-pine-200 rounded-2xl text-pine-800 focus:outline-none focus:border-forest-400 focus:ring-1 focus:ring-forest-200 transition bg-white/50"
                         >
                             {conditions.map(cond => (
-                                <option key={cond} value={cond}>{cond}</option>
+                                <option key={cond} value={cond}>{t(`conditions.${cond}`, { defaultValue: cond })}</option>
                             ))}
                         </select>
                     </div>
@@ -473,7 +475,7 @@ const PostPage = ({ setCurrentPage }) => {
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-pine-600 mb-3">
-                            交易方式 <span className="text-red-500">*</span>
+                            {t('post.delivery', { defaultValue: '交易方式' })} <span className="text-red-500">*</span>
                         </label>
                         <div className="space-y-2">
                             <label className="flex items-center gap-2 cursor-pointer">
@@ -492,7 +494,7 @@ const PostPage = ({ setCurrentPage }) => {
                                     }}
                                     className="w-4 h-4 text-forest-600 rounded border-pine-300 focus:ring-forest-500"
                                 />
-                                <span className="text-pine-700">面交</span>
+                                <span className="text-pine-700">{t('post.meetup', { defaultValue: '面交' })}</span>
                             </label>
                             <label className="flex items-center gap-2 cursor-pointer">
                                 <input
@@ -510,14 +512,14 @@ const PostPage = ({ setCurrentPage }) => {
                                     }}
                                     className="w-4 h-4 text-forest-600 rounded border-pine-300 focus:ring-forest-500"
                                 />
-                                <span className="text-pine-700">寄送</span>
+                                <span className="text-pine-700">{t('post.shipping', { defaultValue: '寄送' })}</span>
                             </label>
                         </div>
                         {errors.deliveryMethod && <p className="text-red-500 text-sm mt-1">{errors.deliveryMethod}</p>}
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-pine-600 mb-3">
-                            價格屬性
+                            {t('post.price_type', { defaultValue: '價格屬性' })}
                         </label>
                         <div className="flex gap-2">
                             <button
@@ -525,14 +527,14 @@ const PostPage = ({ setCurrentPage }) => {
                                 onClick={() => setNegotiable(false)}
                                 className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition ${!negotiable ? 'bg-forest-600 text-white' : 'bg-pine-100 text-pine-600 hover:bg-pine-200'}`}
                             >
-                                不議價
+                                {t('post.not_negotiable', { defaultValue: '不議價' })}
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setNegotiable(true)}
                                 className={`flex-1 py-2 px-3 rounded-xl text-sm font-medium transition ${negotiable ? 'bg-forest-600 text-white' : 'bg-pine-100 text-pine-600 hover:bg-pine-200'}`}
                             >
-                                可議價
+                                {t('post.negotiable', { defaultValue: '可議價' })}
                             </button>
                         </div>
                     </div>
@@ -542,7 +544,7 @@ const PostPage = ({ setCurrentPage }) => {
                 {deliveryMethod.includes('面交') && (
                     <div ref={locationPickerRef}>
                         <label className="block text-sm font-medium text-pine-600 mb-3">
-                            建議面交地點 <span className="text-red-500">*</span>
+                            {t('post.locations', { defaultValue: '建議面交地點' })} <span className="text-red-500">*</span>
                         </label>
 
                         {/* Selected Locations Display */}
@@ -553,7 +555,7 @@ const PostPage = ({ setCurrentPage }) => {
                             <div className="flex items-center gap-2 flex-wrap flex-1">
                                 <MapPin size={18} className="text-pine-400 flex-shrink-0" />
                                 {selectedLocations.length === 0 ? (
-                                    <span className="text-pine-400">點擊選擇面交地點...</span>
+                                    <span className="text-pine-400">{t('post.location_placeholder', { defaultValue: '點擊選擇面交地點...' })}</span>
                                 ) : (
                                     <span className="text-pine-800">{selectedLocations.join('、')}</span>
                                 )}
@@ -570,7 +572,7 @@ const PostPage = ({ setCurrentPage }) => {
                                         type="text"
                                         value={locationSearch}
                                         onChange={(e) => setLocationSearch(e.target.value)}
-                                        placeholder="搜尋地點..."
+                                        placeholder={t('post.search_location', { defaultValue: '搜尋地點...' })}
                                         className="w-full px-3 py-2 border border-pine-200 rounded-xl text-sm focus:outline-none focus:border-forest-400"
                                         onClick={(e) => e.stopPropagation()}
                                     />
@@ -626,27 +628,27 @@ const PostPage = ({ setCurrentPage }) => {
                         )}
 
                         {errors.location && <p className="text-red-500 text-sm mt-1">{errors.location}</p>}
-                        <p className="text-pine-400 text-xs mt-2">可選擇多個地點</p>
+                        <p className="text-pine-400 text-xs mt-2">{t('post.multi_select_hint', { defaultValue: '可選擇多個地點' })}</p>
                     </div>
                 )}
 
                 {/* Description */}
                 <div>
                     <label className="block text-sm font-medium text-pine-600 mb-3">
-                        說明 <span className="text-red-500">*</span>
+                        {t('post.description', { defaultValue: '說明' })} <span className="text-red-500">*</span>
                     </label>
                     <textarea
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         className={`w-full p-3 border rounded-2xl text-pine-800 focus:outline-none focus:border-forest-400 focus:ring-1 focus:ring-forest-200 transition resize-none bg-white/50 ${errors.description ? 'border-red-300' : 'border-pine-200'}`}
                         rows="5"
-                        placeholder="分享這件物品的故事..."
+                        placeholder={t('post.description_placeholder', { defaultValue: '分享這件物品的故事...' })}
                     ></textarea>
                     {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
-                </div >
+                </div>
 
                 {/* Submit Button */}
-                < button
+                <button
                     onClick={handleSubmit}
                     disabled={loading}
                     className={`w-full py-4 rounded-2xl font-medium transition shadow-md hover:shadow-lg transform active:scale-[0.99] ${loading
@@ -654,9 +656,9 @@ const PostPage = ({ setCurrentPage }) => {
                         : 'bg-pine-800 text-white hover:bg-pine-700'
                         }`}
                 >
-                    {loading ? '發布中...' : '發布'}
-                </button >
-            </div >
+                    {loading ? t('post.submitting', { defaultValue: '發布中...' }) : t('post.submit', { defaultValue: '發布' })}
+                </button>
+            </div>
 
             <style>{`
                 @keyframes fadeIn {

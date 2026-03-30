@@ -46,50 +46,37 @@ const ImageCropper = ({ imageSrc, onCancel, onCropComplete, shape = 'circle', ti
 
     const handleCrop = () => {
         const canvas = document.createElement('canvas');
-        const size = 300; // Final size
-        canvas.width = size;
-        canvas.height = size;
+        const containerSize = 300;
+        const exportScale = 4; // Output 1200x1200px image instead of 300x300px
+        const exportSize = containerSize * exportScale;
+
+        canvas.width = exportSize;
+        canvas.height = exportSize;
         const ctx = canvas.getContext('2d');
 
         ctx.fillStyle = '#FFFFFF';
-        ctx.fillRect(0, 0, size, size);
+        ctx.fillRect(0, 0, exportSize, exportSize);
 
         // Clip based on shape
         if (shape === 'circle') {
             ctx.beginPath();
-            ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+            ctx.arc(exportSize / 2, exportSize / 2, exportSize / 2, 0, Math.PI * 2);
             ctx.clip();
         }
-        // For square, no clip needed as canvas is already square
 
         const img = imageRef.current;
 
-        // Draw image
-        // We need to translate/scale exactly as seen on screen.
-        // If container is 300x300.
-        // Image origin is top-left.
-        // Currently we use flex center to put image? No, absolute positioning is better.
-
-        // Let's say Image is centered by default.
-        // x = (ContainerW - ImgW * Zoom) / 2 + PanX ?
-        // Or simpler:
-        // ctx.translate(size/2 + pan.x, size/2 + pan.y);
-        // ctx.scale(zoom, zoom);
-        // ctx.drawImage(img, -img.naturalWidth/2, -img.naturalHeight/2);
-
-        // This assumes pan is delta from center.
-        // We need to match the DOM implementation.
-
-        const centerX = size / 2 + pan.x;
-        const centerY = size / 2 + pan.y;
+        // Scale transform coordinates by the exportScale
+        const centerX = (containerSize / 2 + pan.x) * exportScale;
+        const centerY = (containerSize / 2 + pan.y) * exportScale;
 
         ctx.translate(centerX, centerY);
-        ctx.scale(zoom, zoom);
+        ctx.scale(zoom * exportScale, zoom * exportScale);
         ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
 
         canvas.toBlob((blob) => {
             onCropComplete(blob);
-        }, 'image/jpeg', 0.9);
+        }, 'image/jpeg', 0.95);
     };
 
     return (

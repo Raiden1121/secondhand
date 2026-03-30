@@ -1,7 +1,10 @@
 import React from 'react';
 import { Edit3 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const ProductCard = ({ product, onClick, isOwner, onEdit }) => {
+    const { t } = useTranslation();
+
     // Handle both API format (images array/string) and mock format (image emoji)
     const getImage = () => {
         if (product.image) return product.image; // Mock data emoji
@@ -17,9 +20,13 @@ const ProductCard = ({ product, onClick, isOwner, onEdit }) => {
         }
 
         if (images && images.length > 0) {
+            let imgUrl = images[0];
+            if (imgUrl.startsWith('/uploads/')) {
+                imgUrl = `${import.meta.env.VITE_API_URL}${imgUrl}`;
+            }
             return (
                 <img
-                    src={`http://localhost:3000${images[0]}`}
+                    src={imgUrl}
                     alt={product.title}
                     className="w-full h-full object-cover"
                 />
@@ -45,7 +52,7 @@ const ProductCard = ({ product, onClick, isOwner, onEdit }) => {
                     <button
                         onClick={handleEditClick}
                         className="absolute top-2 right-2 w-8 h-8 bg-white/90 backdrop-blur-sm text-pine-600 rounded-full flex items-center justify-center hover:bg-forest-500 hover:text-white transition shadow-md z-10"
-                        title="編輯商品"
+                        title={t('product.edit')}
                     >
                         <Edit3 size={16} />
                     </button>
@@ -54,24 +61,24 @@ const ProductCard = ({ product, onClick, isOwner, onEdit }) => {
             <div className="p-3 md:p-4">
                 <div className="flex items-center justify-between">
                     <h3 className="font-medium text-pine-900 truncate text-sm md:text-base flex-1">{product.title}</h3>
-                    <span className="text-xs text-pine-700 flex-shrink-0 ml-2">{product.condition || (product.status === 'active' ? '販售中' : '已售出')}</span>
+                    <span className="text-xs text-pine-700 flex-shrink-0 ml-2">{product.condition === '全新' ? t('product.new', { defaultValue: 'New' }) : (product.condition || (product.status === 'active' ? t('product.selling') : t('product.sold')))}</span>
                 </div>
                 <div className="flex items-center justify-between mt-1">
-                    <p className="text-xs text-pine-500">{product.category}</p>
+                    <p className="text-xs text-pine-500">{t(`categories.${product.category}`, { defaultValue: product.category })}</p>
                     {product.deliveryMethod?.includes('寄送') && (
-                        <span className="text-xs text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-200">可寄送</span>
+                        <span className="text-xs text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-200">{t('product.shippable')}</span>
                     )}
                 </div>
                 <div className="flex items-center justify-between mt-3">
                     <div className="flex items-center gap-2">
                         <span className="text-base md:text-lg font-semibold text-pine-800">NT$ {product.price?.toLocaleString?.() || product.price}</span>
-                        <span className="text-xs text-pine-400 font-light">{product.negotiable ? '可議價' : '不議價'}</span>
+                        <span className="text-xs text-pine-400 font-light">{product.negotiable ? t('product.negotiable') : t('product.not_negotiable')}</span>
                     </div>
                     <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${product.reserved
                         ? 'bg-red-100 text-red-600'
                         : 'bg-green-100 text-green-600'
                         }`}>
-                        {product.reserved ? '已保留' : '未保留'}
+                        {product.reserved ? t('product.reserved') : t('product.available')}
                     </span>
                 </div>
             </div>
