@@ -13,6 +13,7 @@ const resources = {
         ncu_marketplace: "NCU Market",
         brand: "Pine Handover",
         login_signup: "Login / Sign Up",
+        back: "Back",
       },
       landing: {
         slogan_p1: "Let Your Items",
@@ -89,7 +90,9 @@ const resources = {
         purchase_request_failed: "Failed to send purchase request",
         report_sent: "Report sent, we will handle it soon",
         status_pending: "Sending...",
-        status_processing: "Processing..."
+        status_processing: "Processing...",
+        seller_no_products: "This seller currently has no items",
+        load_failed: "Failed to load products"
       },
       chat: {
         title: "Chat",
@@ -115,7 +118,10 @@ const resources = {
         edit_button: "Edit",
         sold_items: "Sold Items",
         delete_all: "Delete All",
-        unknown_user: "Unknown User"
+        unknown_user: "Unknown User",
+        seller_not_found: "Seller not found",
+        reviews_count: " reviews",
+        save_changes: "Save",
       },
       notifications: {
         title: "Notifications",
@@ -207,7 +213,13 @@ const resources = {
           no_delivery: "Please select at least one delivery method",
           no_location: "Please select at least one pickup location",
           no_desc: "Please enter item description"
-        }
+        },
+        delete_confirm: "Are you sure you want to delete this item? This action cannot be undone.",
+        unreserve: "Unreserve",
+        reserve: "Reserve",
+        confirm_delete: "Confirm Delete",
+        delete: "Delete",
+        add: "Add"
       },
       categories: {
         "全部": "All",
@@ -319,6 +331,7 @@ const resources = {
         ncu_marketplace: "中央大學二手買賣",
         brand: "松手傳遞",
         login_signup: "登入 / 註冊",
+        back: "返回上一頁",
       },
       landing: {
         slogan_p1: "讓舊物",
@@ -395,7 +408,9 @@ const resources = {
         purchase_request_failed: "發送購買請求失敗",
         report_sent: "檢舉已送出，我們會盡快處理",
         status_pending: "發送中...",
-        status_processing: "處理中..."
+        status_processing: "處理中...",
+        seller_no_products: "此賣家目前沒有商品",
+        load_failed: "無法載入商品"
       },
       chat: {
         title: "對話",
@@ -421,7 +436,10 @@ const resources = {
         edit_button: "編輯",
         sold_items: "已售出商品",
         delete_all: "刪除全部",
-        unknown_user: "未知使用者"
+        unknown_user: "未知使用者",
+        seller_not_found: "找不到賣家",
+        reviews_count: " 則評價",
+        save_changes: "儲存",
       },
       notifications: {
         title: "通知",
@@ -513,7 +531,13 @@ const resources = {
           no_delivery: "請選擇至少一種交易方式",
           no_location: "請選擇至少一個面交地點",
           no_desc: "請輸入物品說明"
-        }
+        },
+        delete_confirm: "確定要刪除此商品嗎？此操作無法復原。",
+        unreserve: "取消保留",
+        reserve: "暫保留",
+        confirm_delete: "確定刪除",
+        delete: "刪除",
+        add: "新增"
       },
       categories: {
         "全部": "全部",
