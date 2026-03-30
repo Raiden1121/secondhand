@@ -2,18 +2,20 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Star, MapPin, Share2, ArrowLeft, X, Plus, ChevronDown, ChevronUp, CheckCircle } from 'lucide-react';
 import ProductCard from '../components/products/ProductCard';
 import { categories, conditions, meetingPointCategories } from '../data/mock';
+import { useTranslation } from 'react-i18next';
 
-const sortOptions = [
-    { value: 'default', label: '預設排序' },
-    { value: 'price-asc', label: '價格：低到高' },
-    { value: 'price-desc', label: '價格：高到低' },
-    { value: 'favorites-desc', label: '收藏數：多到少' },
-    { value: 'favorites-asc', label: '收藏數：少到多' },
-    { value: 'name-asc', label: '名稱：A-Z' },
-    { value: 'name-desc', label: '名稱：Z-A' },
+const sortOptionsKeys = [
+    { value: 'default', labelKey: 'home.sort_default', defaultLabel: '預設排序' },
+    { value: 'price-asc', labelKey: 'home.sort_price_asc', defaultLabel: '價格：低到高' },
+    { value: 'price-desc', labelKey: 'home.sort_price_desc', defaultLabel: '價格：高到低' },
+    { value: 'favorites-desc', labelKey: 'home.sort_fav_desc', defaultLabel: '收藏數：多到少' },
+    { value: 'favorites-asc', labelKey: 'home.sort_fav_asc', defaultLabel: '收藏數：少到多' },
+    { value: 'name-asc', labelKey: 'home.sort_name_asc', defaultLabel: '名稱：A-Z' },
+    { value: 'name-desc', labelKey: 'home.sort_name_desc', defaultLabel: '名稱：Z-A' },
 ];
 
 const SellerPage = ({ sellerId, setCurrentPage, onProductClick, currentUserId, sellerBackPage, onClearBackPage }) => {
+    const { t } = useTranslation();
     const isOwner = currentUserId && String(currentUserId) === String(sellerId);
     const [seller, setSeller] = useState(null);
     const [products, setProducts] = useState([]);
@@ -45,12 +47,12 @@ const SellerPage = ({ sellerId, setCurrentPage, onProductClick, currentUserId, s
         const fetchData = async () => {
             try {
                 const userRes = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/users/${sellerId}`);
-                if (!userRes.ok) throw new Error('找不到賣家資訊');
+                if (!userRes.ok) throw new Error(t('profile.seller_not_found', { defaultValue: '找不到賣家資訊' }));
                 const userData = await userRes.json();
                 setSeller(userData);
 
                 const productRes = await fetch(`${import.meta.env.VITE_API_URL}/api/products?sellerId=${sellerId}`);
-                if (!productRes.ok) throw new Error('無法載入商品');
+                if (!productRes.ok) throw new Error(t('product.load_failed', { defaultValue: '無法載入商品' }));
                 const productData = await productRes.json();
                 setProducts(productData);
 
@@ -286,8 +288,8 @@ const SellerPage = ({ sellerId, setCurrentPage, onProductClick, currentUserId, s
         }
     };
 
-    if (loading) return <div className="p-10 text-center text-pine-600">載入中...</div>;
-    if (error || !seller) return <div className="p-10 text-center text-pine-600">找不到賣家</div>;
+    if (loading) return <div className="p-10 text-center text-pine-600">{t('home.loading', { defaultValue: '載入中...' })}</div>;
+    if (error || !seller) return <div className="p-10 text-center text-pine-600">{t('profile.seller_not_found', { defaultValue: '找不到賣家' })}</div>;
 
     return (
         <div className="space-y-4 md:space-y-6 pt-2">
@@ -307,7 +309,7 @@ const SellerPage = ({ sellerId, setCurrentPage, onProductClick, currentUserId, s
                     className="flex items-center gap-2 text-pine-600 hover:text-pine-900 hover:bg-pine-50/80 px-4 py-2 rounded-xl transition font-medium w-fit ml-1 md:ml-0"
                 >
                     <ArrowLeft size={20} />
-                    <span>返回上一頁</span>
+                    <span>{t('nav.back', { defaultValue: '返回上一頁' })}</span>
                 </button>
             )}
 
@@ -331,7 +333,7 @@ const SellerPage = ({ sellerId, setCurrentPage, onProductClick, currentUserId, s
                             <h1 className="text-2xl font-medium text-pine-900">{seller.name}</h1>
                             {seller.department && (
                                 <span className="text-xs bg-forest-50 text-forest-700 px-2 py-1 rounded-full border border-forest-100 w-fit">
-                                    {seller.department}
+                                    {seller.department ? t(`departments.${seller.department}`, { defaultValue: seller.department }) : ''}
                                 </span>
                             )}
                         </div>
@@ -339,7 +341,7 @@ const SellerPage = ({ sellerId, setCurrentPage, onProductClick, currentUserId, s
                             <div className="flex items-center gap-1">
                                 <Star size={16} className="text-amber-500 fill-amber-500" />
                                 <span className="font-medium text-pine-800">{sellerRating.averageScore.toFixed(1)}</span>
-                                <span className="text-pine-400">({sellerRating.totalRatings} 則評價)</span>
+                                <span className="text-pine-400">({sellerRating.totalRatings} {t('profile.reviews_count', { defaultValue: '則評價' })})</span>
                             </div>
                         </div>
                     </div>
@@ -350,12 +352,12 @@ const SellerPage = ({ sellerId, setCurrentPage, onProductClick, currentUserId, s
             <div>
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 mb-4 px-2">
                     <h2 className="text-lg font-medium text-pine-800 flex items-center gap-2">
-                        <span className="text-xl">📦</span> 我的物品
+                        <span className="text-xl">📦</span> {t('profile.my_items', { defaultValue: '我的物品' })}
                     </h2>
                     <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 w-full md:w-auto">
                         <input
                             type="text"
-                            placeholder="搜尋賣場商品..."
+                            placeholder={t('home.search_placeholder', { defaultValue: '搜尋賣場商品...' })}
                             className="px-4 py-2 bg-white/50 border border-pine-200 rounded-xl text-sm focus:outline-none focus:border-forest-400 w-full md:w-40"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -365,8 +367,8 @@ const SellerPage = ({ sellerId, setCurrentPage, onProductClick, currentUserId, s
                             onChange={(e) => setSortBy(e.target.value)}
                             className="px-4 py-2 bg-white/50 border border-pine-200 rounded-xl text-sm focus:outline-none focus:border-forest-400 w-full md:w-40"
                         >
-                            {sortOptions.map(opt => (
-                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            {sortOptionsKeys.map(opt => (
+                                <option key={opt.value} value={opt.value}>{t(opt.labelKey, { defaultValue: opt.defaultLabel })}</option>
                             ))}
                         </select>
                     </div>
@@ -404,7 +406,7 @@ const SellerPage = ({ sellerId, setCurrentPage, onProductClick, currentUserId, s
                         <div className="bg-white rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
                             <div className="p-6">
                                 <div className="flex items-center justify-between mb-6">
-                                    <h2 className="text-xl font-medium text-pine-800">編輯物品</h2>
+                                    <h2 className="text-xl font-medium text-pine-800">{t('post.edit_product', { defaultValue: '編輯物品' })}</h2>
                                     <button onClick={handleClose} className="text-pine-400 hover:text-pine-600">
                                         <X size={24} />
                                     </button>
@@ -413,7 +415,7 @@ const SellerPage = ({ sellerId, setCurrentPage, onProductClick, currentUserId, s
                                 <div className="space-y-4">
                                     {/* Images */}
                                     <div>
-                                        <label className="block text-sm font-medium text-pine-600 mb-2">照片</label>
+                                        <label className="block text-sm font-medium text-pine-600 mb-2">{t('post.photos', { defaultValue: '照片' })}</label>
                                         <div className="flex gap-3 flex-wrap">
                                             {imageList.map((item) => (
                                                 <div key={item.id} className="relative w-20 h-20 rounded-xl overflow-hidden border border-pine-200">
@@ -432,7 +434,7 @@ const SellerPage = ({ sellerId, setCurrentPage, onProductClick, currentUserId, s
                                                     className="w-20 h-20 border-2 border-dashed border-pine-300 rounded-xl flex flex-col items-center justify-center text-pine-400 hover:border-forest-400 hover:text-forest-600 transition"
                                                 >
                                                     <Plus size={20} />
-                                                    <span className="text-xs mt-1">新增</span>
+                                                    <span className="text-xs mt-1">{t('post.add', { defaultValue: '新增' })}</span>
                                                 </button>
                                             )}
                                             <input
@@ -448,7 +450,7 @@ const SellerPage = ({ sellerId, setCurrentPage, onProductClick, currentUserId, s
 
                                     {/* Title */}
                                     <div>
-                                        <label className="block text-sm font-medium text-pine-600 mb-2">名稱</label>
+                                        <label className="block text-sm font-medium text-pine-600 mb-2">{t('post.title', { defaultValue: '名稱' })}</label>
                                         <input
                                             type="text"
                                             value={formData.title}
@@ -459,14 +461,14 @@ const SellerPage = ({ sellerId, setCurrentPage, onProductClick, currentUserId, s
 
                                     {/* Category */}
                                     <div>
-                                        <label className="block text-sm font-medium text-pine-600 mb-2">分類</label>
+                                        <label className="block text-sm font-medium text-pine-600 mb-2">{t('post.category', { defaultValue: '分類' })}</label>
                                         <select
                                             value={formData.category}
                                             onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                                             className="w-full p-3 border border-pine-200 rounded-xl focus:outline-none focus:border-forest-400"
                                         >
                                             {categories.filter(c => c !== '全部').map(cat => (
-                                                <option key={cat} value={cat}>{cat}</option>
+                                                <option key={cat} value={cat}>{t(`categories.${cat}`, { defaultValue: cat })}</option>
                                             ))}
                                         </select>
                                     </div>
@@ -474,7 +476,7 @@ const SellerPage = ({ sellerId, setCurrentPage, onProductClick, currentUserId, s
                                     {/* Price & Condition */}
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-pine-600 mb-2">價格</label>
+                                            <label className="block text-sm font-medium text-pine-600 mb-2">{t('post.price', { defaultValue: '價格' })}</label>
                                             <div className="relative">
                                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-pine-400">NT$</span>
                                                 <input
@@ -486,14 +488,14 @@ const SellerPage = ({ sellerId, setCurrentPage, onProductClick, currentUserId, s
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-pine-600 mb-2">狀況</label>
+                                            <label className="block text-sm font-medium text-pine-600 mb-2">{t('post.condition', { defaultValue: '狀況' })}</label>
                                             <select
                                                 value={formData.condition}
                                                 onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
                                                 className="w-full p-3 border border-pine-200 rounded-xl focus:outline-none focus:border-forest-400"
                                             >
                                                 {conditions.map(cond => (
-                                                    <option key={cond} value={cond}>{cond}</option>
+                                                    <option key={cond} value={cond}>{t(`conditions.${cond}`, { defaultValue: cond })}</option>
                                                 ))}
                                             </select>
                                         </div>
@@ -501,7 +503,7 @@ const SellerPage = ({ sellerId, setCurrentPage, onProductClick, currentUserId, s
 
                                     {/* Description */}
                                     <div>
-                                        <label className="block text-sm font-medium text-pine-600 mb-2">說明</label>
+                                        <label className="block text-sm font-medium text-pine-600 mb-2">{t('post.description', { defaultValue: '說明' })}</label>
                                         <textarea
                                             value={formData.description}
                                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -512,7 +514,7 @@ const SellerPage = ({ sellerId, setCurrentPage, onProductClick, currentUserId, s
 
                                     {/* Location Picker */}
                                     <div ref={locationPickerRef}>
-                                        <label className="block text-sm font-medium text-pine-600 mb-2">建議面交地點</label>
+                                        <label className="block text-sm font-medium text-pine-600 mb-2">{t('post.locations', { defaultValue: '建議面交地點' })}</label>
                                         <div
                                             onClick={() => setShowLocationPicker(!showLocationPicker)}
                                             className="w-full p-3 border border-pine-200 rounded-xl cursor-pointer flex items-center justify-between"
@@ -520,7 +522,7 @@ const SellerPage = ({ sellerId, setCurrentPage, onProductClick, currentUserId, s
                                             <div className="flex items-center gap-2 flex-wrap flex-1">
                                                 <MapPin size={18} className="text-pine-400 flex-shrink-0" />
                                                 {selectedLocations.length === 0 ? (
-                                                    <span className="text-pine-400">點擊選擇面交地點...</span>
+                                                    <span className="text-pine-400">{t('post.location_placeholder', { defaultValue: '點擊選擇面交地點...' })}</span>
                                                 ) : (
                                                     <span className="text-pine-800">{selectedLocations.join('、')}</span>
                                                 )}
@@ -570,7 +572,7 @@ const SellerPage = ({ sellerId, setCurrentPage, onProductClick, currentUserId, s
                                                 ))}
                                             </div>
                                         )}
-                                        <p className="text-pine-400 text-xs mt-1">可選擇多個地點</p>
+                                        <p className="text-pine-400 text-xs mt-1">{t('post.multi_select_hint', { defaultValue: '可選擇多個地點' })}</p>
                                     </div>
                                 </div>
 
@@ -578,14 +580,12 @@ const SellerPage = ({ sellerId, setCurrentPage, onProductClick, currentUserId, s
                                 <div className="mt-6 space-y-3">
                                     {showDeleteConfirm ? (
                                         <div className="bg-red-50 p-4 rounded-xl border border-red-200">
-                                            <p className="text-red-700 text-sm mb-3">確定要刪除此商品嗎？此操作無法復原。</p>
+                                            <p className="text-red-700 text-sm mb-3">{t('post.delete_confirm', { defaultValue: '確定要刪除此商品嗎？此操作無法復原。' })}</p>
                                             <div className="flex gap-2">
                                                 <button
                                                     onClick={() => setShowDeleteConfirm(false)}
                                                     className="flex-1 py-2 border border-pine-200 rounded-xl text-pine-600 hover:bg-pine-50"
-                                                >
-                                                    取消
-                                                </button>
+                                                >{t('chat.cancel', { defaultValue: '取消'})}</button>
                                                 <button
                                                     onClick={confirmDelete}
                                                     className="flex-1 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600"
@@ -599,15 +599,11 @@ const SellerPage = ({ sellerId, setCurrentPage, onProductClick, currentUserId, s
                                             <button
                                                 onClick={() => setShowDeleteConfirm(true)}
                                                 className="w-full py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition font-medium"
-                                            >
-                                                刪除
-                                            </button>
+                                            >{t('post.delete', { defaultValue: '刪除'})}</button>
                                             <button
                                                 onClick={handleSave}
                                                 className="w-full py-3 bg-forest-600 text-white rounded-xl hover:bg-forest-700 transition font-medium"
-                                            >
-                                                儲存
-                                            </button>
+                                            >{t('profile.save_changes', { defaultValue: '儲存'})}</button>
                                             <button
                                                 onClick={handleReserveToggle}
                                                 className="w-full py-3 bg-pine-700 text-white rounded-xl hover:bg-pine-800 transition font-medium"
