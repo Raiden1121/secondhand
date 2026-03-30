@@ -223,5 +223,3 @@ secondhand/
 ---
 
 ## 📄 License
-
-MIT License
