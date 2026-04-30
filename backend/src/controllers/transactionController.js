@@ -109,6 +109,8 @@ export const confirmPurchase = async (req, res) => {
         ]);
 
         // Create notifications for both parties to rate
+        const carbonSaved = updatedTransaction.product?.carbonSaved || 0;
+        
         await prisma.notification.createMany({
             data: [
                 {
@@ -116,14 +118,14 @@ export const confirmPurchase = async (req, res) => {
                     type: 'rate_prompt',
                     title: '交易完成',
                     content: `您購買「${transaction.product.title}」的交易已確認，請評價賣家`,
-                    data: JSON.stringify({ transactionId: transaction.id })
+                    data: JSON.stringify({ transactionId: transaction.id, carbonSaved })
                 },
                 {
                     userId: sellerId,
                     type: 'rate_prompt',
                     title: '交易完成',
                     content: `您出售「${transaction.product.title}」的交易已確認，請評價買家`,
-                    data: JSON.stringify({ transactionId: transaction.id })
+                    data: JSON.stringify({ transactionId: transaction.id, carbonSaved })
                 }
             ]
         });
@@ -235,6 +237,30 @@ export const getProductTransactionStatus = async (req, res) => {
         res.json({ hasPendingRequest: !!transaction, transaction });
     } catch (error) {
         console.error('Error checking transaction status:', error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// Get platform-wide carbon reduction stats
+export const getCarbonStats = async (req, res) => {
+    try {
+        const stats = await prisma.product.aggregate({
+            _sum: {
+                carbonSaved: true
+            },
+            where: {
+                transactions: {
+                    some: {
+                        status: { in: ['confirmed', 'completed'] }
+                    }
+                }
+            }
+        });
+        
+        const totalCarbonSaved = stats._sum.carbonSaved || 0;
+        res.json({ totalCarbonSaved });
+    } catch (error) {
+        console.error('Error getting carbon stats:', error);
         res.status(500).json({ message: error.message });
     }
 };

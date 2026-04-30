@@ -18,10 +18,10 @@ const resources = {
       landing: {
         slogan_p1: "Let Your Items",
         slogan_p2: "Continue",
-        slogan_p3: " New Stories",
+        slogan_p3: "New Stories",
         desc_p1: "NCU's exclusive secondhand trading platform.",
         desc_p2: "Here, every exchange is a warm handover.",
-        start_hunt: "Start Treasure Hunt",
+        start_hunt: "Start Looking For",
         share_items: "Share Items",
         easy_process: "Simple Process, Easy to Use",
         seller: "Seller",
@@ -43,7 +43,11 @@ const resources = {
         about_title: "About Pine Handover",
         about_desc: "We are a student development team from NCU. We hope this platform allows secondhand items left by graduating seniors to conveniently flow to juniors in need. Reducing waste is not just eco-friendly, but also a continuation of emotion.",
         footer_rights: "© 2026 Pine Handover",
-        footer_sub: "NCU Secondhand Trading Platform"
+        footer_sub: "NCU Secondhand Trading Platform",
+        carbon_title: "Sustainable Impact of Pine Handover",
+        carbon_desc: "Every secondhand transaction on campus reduces the carbon emissions from producing new items. See how much burden we've saved the Earth so far!",
+        carbon_total_label: "Total Carbon Saved (kg CO2e)",
+        carbon_trees_label: "Equivalent Trees Planted"
       },
       home: {
         slogan: "Pass on the good parts, continue the stories",
@@ -133,7 +137,13 @@ const resources = {
         cancel: "Cancel",
         go_to_rate: "Go to Rate",
         rate_later: "Rate Later",
-        delete_this: "Delete this notification"
+        delete_this: "Delete this notification",
+        carbon_modal_title: "Thank you for participating!",
+        carbon_modal_subtitle: "Every handover continues life for the Earth",
+        carbon_modal_desc: "This successful transaction reduced the Earth's burden by",
+        carbon_modal_trees_p1: "Equivalent to planting",
+        carbon_modal_trees_p2: "trees",
+        carbon_modal_btn: "Keep Treasure Hunting"
       },
       auth: {
         reset_password: "Reset Password",
@@ -361,7 +371,11 @@ const resources = {
         about_title: "關於松手傳遞",
         about_desc: "我們是中央大學的學生開發團隊。希望能透過這個平台，讓畢業學長姐帶不走的二手物品，能夠便利地流轉到需要的學弟妹手中。減少浪費，不僅是環保，更是一種情感的延續。",
         footer_rights: "© 2026 松手傳遞",
-        footer_sub: "中央大學二手交易平台"
+        footer_sub: "中央大學二手交易平台",
+        carbon_title: "松手傳遞的永續影響力",
+        carbon_desc: "每一次在校園內的二手交易，都在減少新物品生產的碳排量。看看大家目前為地球省下了多少負擔！",
+        carbon_total_label: "總減碳量 (kg CO2e)",
+        carbon_trees_label: "等效植樹數量 (棵)"
       },
       home: {
         slogan: "傳遞美好，延續故事",
@@ -451,7 +465,13 @@ const resources = {
         cancel: "取消",
         go_to_rate: "前往評價",
         rate_later: "下次再評價",
-        delete_this: "刪除此通知"
+        delete_this: "刪除此通知",
+        carbon_modal_title: "感謝你的參與！",
+        carbon_modal_subtitle: "每次傳遞，都在為地球延續生命",
+        carbon_modal_desc: "本次交易成功為地球減少了",
+        carbon_modal_trees_p1: "約等同於種植了",
+        carbon_modal_trees_p2: "棵樹苗",
+        carbon_modal_btn: "繼續尋寶"
       },
       auth: {
         reset_password: "重設密碼",

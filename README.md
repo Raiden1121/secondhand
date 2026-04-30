@@ -1,225 +1,313 @@
-# NCU Secondhand Marketplace (中央大學二手交易平台)
+# NCU Secondhand Marketplace
 
-這是一個專為中央大學學生設計的二手物品交易平台，整合學校 Portal 登入，提供安全便捷的交易環境。
+中央大學校園二手交易平台。專案包含 React 前端、Express 後端、PostgreSQL 資料庫，以及一組用於碳排放係數整理與商品碳減量估算的 SDGs 腳本。
 
-## 🛠 技術架構 (Technology Stack)
+## Overview
 
-### 前端 (Frontend)
+目前專案分成三個部分：
 
-* **框架**: [React](https://react.dev/) + [Vite](https://vitejs.dev/)
-* **語言**: JavaScript (JSX)
-* **樣式**: [TailwindCSS](https://tailwindcss.com/)
-* **Icons**: [Lucide React](https://lucide.dev/)
-* **主要功能**:
-  * **NCU Portal OAuth 登入**: 整合校務系統單一登入。
-  * **商品列表**: 瀏覽、搜尋二手商品。
-  * **商品詳情**: 查看商品資訊、賣家資料、聯絡賣家。
-  * **收藏功能**: 加入/移除收藏商品。
-  * **即時聊天**: 與賣家進行對話，支援圖片傳送。
-  * **通知系統**: 接收系統通知並標記已讀。
-  * **個人頁面**: 管理個人資料與上架商品。
-  * **雙語支援 (i18n)**: 支援繁體中文 (zh-TW) 與英文 (en) 介面切換。
-  * **響應式設計**: 支援手機與桌面版操作。
+- `src/`：前端應用，使用 React + Vite，採單頁面狀態切換，不使用 React Router。
+- `backend/`：REST API、JWT 認證、檔案上傳、Prisma、Socket.IO、排程清理任務。
+- `SDGs/`：Python 腳本與 SQLite 資料庫，用於整理碳排放係數資料；後端會透過 Gemini API 與這份資料估算商品的 `carbonSaved`。
 
-### 後端 (Backend)
+## Tech Stack
 
-* **Runtime**: [Node.js](https://nodejs.org/)
-* **框架**: [Express.js](https://expressjs.com/)
-* **資料庫工具**: [Prisma ORM](https://www.prisma.io/)
-* **認證**: JWT (JSON Web Token) + NCU Portal OAuth 2.0
-* **檔案上傳**: Multer (支援圖片上傳)
+### Frontend
 
-### 資料庫 (Database)
+- React 19
+- Vite 7
+- Tailwind CSS 3
+- lucide-react
+- react-i18next
+- dnd-kit
+- heic2any
 
-* **類型**: [PostgreSQL](https://www.postgresql.org/)
-* **運行方式**: [Docker](https://www.docker.com/) (image: `postgres:15-alpine`)
-* **資料保存**: 設定 Docker Volume (`pgdata`)，即使容器暫停或刪除，資料依然會保存。
+### Backend
 
----
+- Node.js
+- Express 5
+- Prisma 7
+- PostgreSQL
+- Socket.IO
+- Multer
+- Nodemailer
+- node-cron
+- Google GenAI SDK
 
-## 📡 API 功能清單 (Backend Features)
+### SDGs Tools
 
-### 🔐 認證 (Auth)
+- Python
+- SQLite
+- Playwright
+- BeautifulSoup
 
-| 方法 | 路徑                          | 說明                  |
-| ---- | ----------------------------- | --------------------- |
-| POST | `/api/auth/register`        | 用戶註冊              |
-| POST | `/api/auth/login`           | 用戶登入              |
-| GET  | `/api/auth/me`              | 取得當前用戶資訊      |
-| PUT  | `/api/auth/update`          | 更新個人資料          |
-| GET  | `/api/auth/portal`          | NCU Portal OAuth 登入 |
-| GET  | `/api/auth/portal/callback` | OAuth 回調處理        |
+## Current Features
 
-### 📦 商品 (Product)
+### Frontend
 
-| 方法   | 路徑                          | 說明                                                     |
-| ------ | ----------------------------- | -------------------------------------------------------- |
-| GET    | `/api/products`             | 取得所有商品 (支援 `sellerId`, `excludeUserId` 參數) |
-| GET    | `/api/products/:id`         | 取得單一商品詳情                                         |
-| POST   | `/api/products`             | 上架新商品 (需登入)                                      |
-| GET    | `/api/products/my`          | 取得我的商品 (需登入)                                    |
-| PUT    | `/api/products/:id`         | 更新商品 (需登入)                                        |
-| DELETE | `/api/products/:id`         | 刪除商品 (需登入)                                        |
-| PATCH  | `/api/products/:id/reserve` | 切換商品保留狀態 (需登入)                                |
+- Landing page、登入頁、忘記密碼、重設密碼、信箱驗證頁
+- 首頁商品瀏覽、分類篩選、學院與系所篩選、模糊搜尋、排序
+- 商品詳情頁、賣家頁、個人頁、上架頁
+- 收藏、通知、聊天室、評價頁
+- 中英文介面切換
+- 手機與桌面版介面
+- 商品分享連結與以 URL hash 開啟特定商品或驗證流程
 
-### 💬 聊天 (Chat)
+### Backend
 
-| 方法   | 路徑                           | 說明                |
-| ------ | ------------------------------ | ------------------- |
-| GET    | `/api/chat`                  | 取得對話列表        |
-| GET    | `/api/chat/:chatId/messages` | 取得對話訊息        |
-| POST   | `/api/chat/initiate`         | 開始新對話          |
-| POST   | `/api/chat/:chatId/messages` | 發送訊息 (支援圖片) |
-| PUT    | `/api/chat/:chatId/read`     | 標記對話已讀        |
-| DELETE | `/api/chat/:chatId`          | 刪除對話            |
+- 一般註冊登入與 NCU Portal OAuth
+- Email 驗證與忘記密碼流程
+- 商品 CRUD、圖片上傳、保留狀態切換、已售商品批次清除
+- 收藏、檢舉、通知、聊天室、交易確認與評價
+- 每日凌晨 3 點自動清理舊訊息與已讀通知
+- 商品建立後背景計算碳減量
 
-### ❤️ 收藏 (Favorite)
+## Project Structure
 
-| 方法   | 路徑                                | 說明           |
-| ------ | ----------------------------------- | -------------- |
-| GET    | `/api/favorites`                  | 取得我的收藏   |
-| POST   | `/api/favorites/:productId`       | 加入收藏       |
-| DELETE | `/api/favorites/:productId`       | 移除收藏       |
-| GET    | `/api/favorites/:productId/check` | 檢查是否已收藏 |
+```text
+secondhand/
+├── src/                   # Frontend source
+├── public/                # Frontend static assets
+├── backend/
+│   ├── prisma/            # Prisma schema, migrations, seed
+│   ├── src/
+│   │   ├── controllers/   # Route handlers
+│   │   ├── middleware/    # Auth, upload
+│   │   ├── routes/        # API route definitions
+│   │   ├── services/      # Mail, cleanup, carbon logic
+│   │   └── lib/           # Prisma client
+│   ├── uploads/           # Uploaded files
+│   └── docker-compose.yml # Local PostgreSQL service
+├── SDGs/                  # Carbon factor scraper and SQLite DB
+└── README.md
+```
 
-### 🔔 通知 (Notification)
+## Environment Variables
 
-| 方法 | 路徑                            | 說明         |
-| ---- | ------------------------------- | ------------ |
-| GET  | `/api/notifications`          | 取得所有通知 |
-| PUT  | `/api/notifications/:id/read` | 標記單則已讀 |
-| PUT  | `/api/notifications/read-all` | 標記全部已讀 |
+### Frontend `.env`
 
-### 🚨 檢舉 (Report)
+根目錄的 `.env` 目前使用：
 
-| 方法 | 路徑             | 說明                  |
-| ---- | ---------------- | --------------------- |
-| POST | `/api/reports` | 檢舉商品              |
-| GET  | `/api/reports` | 取得所有檢舉 (管理員) |
+```env
+VITE_PORT=5173
+VITE_API_URL=http://localhost:3000
+```
 
----
+### Backend `.env`
 
-## 🚀 如何運行 (How to Run)
+後端至少需要這些變數：
 
-### 1. 啟動資料庫 (Database)
+```env
+PORT=3000
+DB_PORT=5433
+DATABASE_URL=postgresql://user:password@localhost:5433/secondhand?schema=public
+JWT_SECRET=replace_me
+NODE_ENV=development
+FRONTEND_URL=http://localhost:5173
+PORTAL_CLIENT_ID=replace_me
+PORTAL_CLIENT_SECRET=replace_me
+PORTAL_REDIRECT_URI=http://localhost:3000/api/auth/portal/callback
+SMTP_USER=replace_me
+SMTP_PASS=replace_me
+GEMINI_API_KEY=replace_me
+```
 
-確保您已安裝 Docker Desktop。
+說明：
+
+- `DATABASE_URL` 對應 `backend/docker-compose.yml` 內的 PostgreSQL。
+- 若 `GEMINI_API_KEY` 未設定，商品仍可建立，但會略過碳減量估算。
+- 若 `SMTP_USER` 或 `SMTP_PASS` 不正確，註冊驗證信與重設密碼信將無法正常寄送。
+
+## Local Development
+
+### 1. Install dependencies
+
+根目錄與 `backend/` 都有各自的 `package.json`：
+
+```bash
+npm install
+cd backend
+npm install
+```
+
+### 2. Start PostgreSQL with Docker
 
 ```bash
 cd backend
-docker-compose up -d
+docker compose up -d
 ```
 
-### 2. 初始化資料庫 & 查看資料 (Prisma Studio)
+說明：
 
-如果第一次運行或 Schema 有變動：
+- 本機連接埠使用 `5433`
+- 容器內 PostgreSQL 連接埠是 `5432`
+- 若出現 `Cannot connect to the Docker daemon`，表示 Docker Desktop 尚未啟動
+
+### 3. Apply Prisma schema
 
 ```bash
 cd backend
 npx prisma db push
 ```
 
-**⭐️ 推薦：使用可視化介面管理資料庫**
+如果要載入範例資料：
+
+```bash
+cd backend
+npx prisma db seed
+```
+
+如果要查看資料庫內容：
 
 ```bash
 cd backend
 npx prisma studio
 ```
 
-瀏覽器打開 `http://localhost:5555` (預設)即可：
-
-* 查看所有 Users, Products, Chats, Messages 等
-* 手動新增/刪除資料 (已支援 Cascade Delete)
-
-### 3. 啟動後端伺服器 (Backend Server)
+### 4. Start backend
 
 ```bash
 cd backend
 npm run dev
 ```
 
-* Server 預設運行於 `http://localhost:3000`
+預設服務位置：`http://localhost:3000`
 
-### 4. 啟動前端應用 (Frontend App)
+### 5. Start frontend
 
-開一個新的 Terminal：
+在另一個 terminal 回到專案根目錄：
 
 ```bash
-# 回到根目錄 (如果還在 backend)
-cd .. 
 npm run dev
 ```
 
-* App 預設運行於 `http://localhost:5173`
+預設服務位置：`http://localhost:5173`
 
----
+## Available Scripts
 
-## 📝 開發進度筆記
+### Root
 
-### ✅ 已完成功能
+- `npm run dev`：啟動 Vite 開發伺服器
+- `npm run build`：建置前端
+- `npm run preview`：預覽前端建置結果
+- `npm run lint`：執行 ESLint
 
-- [X] NCU Portal OAuth 整合
-- [X] 用戶註冊/登入系統 (含密碼加密)
-- [X] 商品 CRUD (上架、編輯、刪除)
-- [X] 商品圖片上傳 (多圖支援、拖曳排序)
-- [X] 商品收藏功能
-- [X] 即時聊天系統
-- [X] 聊天圖片傳送
-- [X] 聊天商品卡片分享 (點擊開始對話後，發送第一條訊息會自動附帶商品資訊)
-- [X] 商品分享功能 (複製連結到剪貼簿)
-- [X] 通知系統
-- [X] 商品檢舉功能
-- [X] 個人資料編輯 (頭像上傳、裁切功能)
-- [X] 響應式設計 (RWD)
-- [X] 商品詳情頁面優化 (固定視窗、比例縮放、雙擊放大)
-- [X] 智能返回導航 (記住來源頁面：聊天室/個人頁面/首頁)
-- [X] URL Hash 導航 (分享連結可直接開啟商品頁面)
-- [X] 賣家頁面 (SellerPage) - 查看賣家資訊與商品
-- [X] 商品保留功能 (暫保留/取消保留)
-- [X] 商品狀態標籤 (已保留/尚未保留)
-- [X] 商品排序功能 (價格、收藏數、名稱)
-- [X] 首頁隱藏自己的商品
-- [X] 聊天室點擊對方頭像跳轉到賣家頁面
-- [X] 刪除對話功能
-- [X] 交易狀態追蹤
-- [X] 推播通知
-- [X] **我的物品**：已售出商品自動標記並從首頁隱藏
-- [X] **個人頁面**：已售出商品獨立顯示區塊，支援單個/批量刪除
-- [X] **收藏管理**：已售出收藏品顯示灰階，支援一鍵取消收藏
-- [X] **通知管理**：手動刪除通知功能（單個/批量刪除已讀）
-- [X] **搜尋優化**：模糊搜尋（標題、描述、分類），Enter 搜尋，刪除字即時更新
-- [X] **自動清理**：每日凌晨3點自動刪除7天前舊訊息與已讀通知
-- [X] **全站雙語 (i18n)**：導入 `react-i18next` 支援首頁、登入、聊天、專案頁面等中英雙語動態切換
+### Backend
 
-### 🚧 進行中 / 待開發 / 待優化 (TODO)
+- `npm run dev`：以 nodemon 啟動後端
+- `npm run start`：以 node 啟動後端
 
-- [ ] 管理員後台
-- [ ] 推薦系統
-- [ ] 瀏覽歷史記錄
-- [ ] 競標
-- [ ] SDGs AI碳排放計算
+## API Summary
 
----
+以下為目前 `backend/src/routes/` 實際存在的 API。
 
-## 📁 專案結構
+### Auth
 
-```
-secondhand/
-├── src/                    # 前端原始碼
-│   ├── components/         # React 元件
-│   ├── pages/              # 頁面元件
-│   └── assets/             # 靜態資源
-├── backend/
-│   ├── src/
-│   │   ├── controllers/    # API 控制器
-│   │   ├── routes/         # 路由定義
-│   │   ├── middleware/     # 中間件 (auth, upload)
-│   │   └── lib/            # Prisma client
-│   ├── prisma/             # 資料庫 Schema
-│   └── uploads/            # 上傳的檔案
-└── README.md
-```
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/forgot-password`
+- `POST /api/auth/reset-password`
+- `POST /api/auth/verify-email`
+- `GET /api/auth/me`
+- `PUT /api/auth/update`
+- `GET /api/auth/portal`
+- `GET /api/auth/portal/callback`
+- `GET /api/auth/users/:id`
 
----
+### Products
 
-## 📄 License
+- `GET /api/products`
+- `GET /api/products/my`
+- `GET /api/products/:id`
+- `POST /api/products`
+- `PUT /api/products/:id`
+- `PATCH /api/products/:id/reserve`
+- `DELETE /api/products/sold/all`
+- `DELETE /api/products/:id`
+
+`GET /api/products` 支援：
+
+- `sellerId`
+- `excludeUserId`
+
+### Chat
+
+- `GET /api/chat`
+- `GET /api/chat/:chatId/messages`
+- `POST /api/chat/initiate`
+- `POST /api/chat/:chatId/messages`
+- `PUT /api/chat/:chatId/read`
+- `DELETE /api/chat/:chatId`
+
+### Favorites
+
+- `GET /api/favorites`
+- `GET /api/favorites/check/:productId`
+- `POST /api/favorites/:productId`
+- `DELETE /api/favorites/:productId`
+
+### Notifications
+
+- `GET /api/notifications`
+- `PUT /api/notifications/:id/read`
+- `PUT /api/notifications/read-all`
+- `DELETE /api/notifications/:id`
+- `DELETE /api/notifications/read/all`
+
+### Reports
+
+- `POST /api/reports`
+
+### Transactions
+
+- `GET /api/transactions/carbon-stats`
+- `GET /api/transactions/product/:productId/status`
+- `POST /api/transactions`
+- `PATCH /api/transactions/:transactionId/confirm`
+- `PATCH /api/transactions/:transactionId/cancel`
+- `GET /api/transactions/:transactionId`
+
+### Ratings
+
+- `POST /api/ratings`
+- `GET /api/ratings/user/:userId`
+- `GET /api/ratings/transaction/:transactionId/status`
+
+## Database Notes
+
+Prisma schema 目前包含以下模型：
+
+- `User`
+- `Product`
+- `Chat`
+- `Message`
+- `Notification`
+- `Favorite`
+- `Report`
+- `Transaction`
+- `Rating`
+
+資料庫使用 PostgreSQL；商品圖片、頭像等檔案則存放於 `backend/uploads/`，由後端以 `/uploads` 靜態路徑提供。
+
+## Realtime and Cleanup
+
+- Socket.IO 目前用於聊天室即時訊息轉發
+- 後端啟動後會註冊每日 `03:00` 的清理排程
+- 清理邏輯位於 [backend/src/services/cleanupService.js](/Users/ray/Desktop/secondhand/backend/src/services/cleanupService.js:1)
+
+## SDGs and Carbon Calculation
+
+`SDGs/` 目錄包含：
+
+- `emission_factors.db`：SQLite 碳排係數資料庫
+- `db.py`：資料表初始化與寫入工具
+- `scraper.py`：使用 Playwright 抓取台灣碳足跡係數資料
+- `requirements.txt`：Python 相依套件
+
+後端商品建立流程會呼叫 [backend/src/services/carbonService.js](/Users/ray/Desktop/secondhand/backend/src/services/carbonService.js:1)：
+
+- 用 Gemini 判斷商品對應的碳排係數分類
+- 從 `SDGs/emission_factors.db` 讀取係數
+- 將結果回寫到 `Product.carbonSaved`
+
+若你要重新整理碳排資料，需先安裝 `SDGs/requirements.txt` 內的套件，並另外準備 Playwright 瀏覽器環境。

@@ -48,6 +48,12 @@ const ProductCard = ({ product, onClick, isOwner, onEdit }) => {
         >
             <div className="aspect-square bg-cream-50 flex items-center justify-center text-5xl md:text-6xl group-hover:scale-105 transition overflow-hidden relative">
                 {getImage()}
+                {product.carbonSaved > 0 && (
+                    <div className="absolute top-2 left-2 bg-white/95 backdrop-blur-sm text-emerald-700 text-xs font-black px-2 py-1 rounded-full flex items-center gap-1 shadow-sm border border-emerald-100/50 z-10">
+                        <span>🌱</span>
+                        <span>-{product.carbonSaved}kg</span>
+                    </div>
+                )}
                 {isOwner && (
                     <button
                         onClick={handleEditClick}

@@ -1,4 +1,5 @@
 import prisma from '../lib/prisma.js';
+import { calculateCarbonReduction } from '../services/carbonService.js';
 
 export const getProducts = async (req, res) => {
     try {
@@ -89,6 +90,18 @@ export const createProduct = async (req, res) => {
                 sellerId: req.user.id // From auth middleware
             }
         });
+        
+        // Asynchronously calculate carbon reduction
+        calculateCarbonReduction(title, description, category).then(async (carbonSaved) => {
+            if (carbonSaved > 0) {
+                await prisma.product.update({
+                    where: { id: product.id },
+                    data: { carbonSaved }
+                });
+                console.log(`[SDG] Updated carbonSaved for Product ID ${product.id}: ${carbonSaved} kgCO2e`);
+            }
+        }).catch(err => console.error('[SDG] Background carbon calculation failed:', err));
+
         res.status(201).json(product);
     } catch (error) {
         console.error('Error creating product:', error);

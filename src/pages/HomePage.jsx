@@ -44,19 +44,7 @@ const HomePage = ({ setCurrentPage }) => {
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                // Get current user ID to exclude their products
-                let url = `${import.meta.env.VITE_API_URL}/api/products`;
-                const token = localStorage.getItem('token');
-                if (token) {
-                    try {
-                        const payload = JSON.parse(atob(token.split('.')[1]));
-                        if (payload.id) {
-                            url += `?excludeUserId=${payload.id}`;
-                        }
-                    } catch (e) {
-                        // Invalid token, continue without filter
-                    }
-                }
+                const url = `${import.meta.env.VITE_API_URL}/api/products`;
 
                 const response = await fetch(url);
                 if (response.ok) {

@@ -234,21 +234,19 @@ function App() {
         }
       );
       if (response.ok) {
+        const updatedTransaction = await response.json();
+        const carbonSaved = updatedTransaction.product?.carbonSaved || 0;
         // Refresh notifications to get the rating prompts
         await fetchNotifications();
-        return true;
+        return { success: true, carbonSaved };
       } else {
         const err = await response.json();
         console.error("Error confirming purchase:", err.message);
-        // If already processed, we still might want to treat it as "done" for the UI part,
-        // but for now let's return false and handle specific cases if needed.
-        // Actually if it's "Already processed", we should probably return true to let it resolve in UI?
-        // Let's just return false and let the caller decide or just keep it simple.
-        return false;
+        return { success: false };
       }
     } catch (error) {
       console.error("Error confirming purchase:", error);
-      return false;
+      return { success: false };
     }
   };
 

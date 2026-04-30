@@ -52,6 +52,7 @@ model Product {
   condition       String    @default("全新")
   deliveryMethod  String    @default("面交")
   negotiable      Boolean   @default(false)
+  carbonSaved     Float     @default(0.0)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   favorites       Favorite[]

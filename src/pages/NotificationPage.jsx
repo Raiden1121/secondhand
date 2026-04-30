@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { CheckCheck, Check, X, ShoppingBag, Star, MessageCircle, AlertTriangle, Trash2 } from 'lucide-react';
+import { CheckCheck, Check, X, ShoppingBag, Star, MessageCircle, AlertTriangle, Trash2, TreePine } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 const NotificationPage = ({ notifications, onMarkAsRead, onMarkAllAsRead, onConfirmPurchase, onCancelPurchase, onNavigateToRating, onDeleteNotification, onDeleteAllRead }) => {
     const { t } = useTranslation();
     const [processingIds, setProcessingIds] = useState({});
+    const [sdgModalData, setSdgModalData] = useState(null);
 
     const handleConfirm = async (e, notification) => {
         e.stopPropagation();
@@ -13,21 +14,16 @@ const NotificationPage = ({ notifications, onMarkAsRead, onMarkAllAsRead, onConf
         try {
             const data = JSON.parse(notification.data);
             setProcessingIds(prev => ({ ...prev, [notification.id]: 'confirming' }));
-            const success = await onConfirmPurchase(data.transactionId);
+            const result = await onConfirmPurchase(data.transactionId);
 
-            // If successful, mark as read. 
-            // If failed (e.g., already processed), we might also want to mark as read to clear it?
-            // For now, let's assume if it fails, the user might see an error toast (if we had one) or check logs.
-            // But to fix the user's issue "bad request", we should probably assume if it fails it might be done.
-            // Let's force mark as read if success is true.
-            if (success) {
+            if (result && result.success) {
                 onMarkAsRead(notification.id);
-            } else {
-                // If failed, maybe it's already processed. Let's try to reload notifications? 
-                // Or just confirm it anyway to clear the UI if it's a stale state?
-                // Let's just catch the case where it might be stale.
-                // Ideally we show an error. But for now, let's refresh page? No.
-                // Let's just do nothing and let user retry or see log.
+                if (result.carbonSaved && result.carbonSaved > 0) {
+                    setSdgModalData({
+                        carbon: result.carbonSaved.toFixed(2),
+                        trees: (result.carbonSaved / 12).toFixed(2)
+                    });
+                }
             }
         } catch (error) {
             console.error('Error confirming purchase:', error);
@@ -58,8 +54,24 @@ const NotificationPage = ({ notifications, onMarkAsRead, onMarkAllAsRead, onConf
 
         try {
             const data = JSON.parse(notification.data);
-            onNavigateToRating(data.transactionId);
-            onMarkAsRead(notification.id);
+            
+            if (data.carbonSaved && data.carbonSaved > 0) {
+                // Show modal first, then go to rating
+                setSdgModalData({
+                    carbon: data.carbonSaved.toFixed(2),
+                    trees: (data.carbonSaved / 12).toFixed(2),
+                    onContinue: () => {
+                        onNavigateToRating(data.transactionId);
+                        setSdgModalData(null);
+                    }
+                });
+            } else {
+                onNavigateToRating(data.transactionId);
+            }
+            
+            if (!notification.read) {
+                onMarkAsRead(notification.id);
+            }
         } catch (error) {
             console.error('Error navigating to rating:', error);
         }
@@ -117,13 +129,19 @@ const NotificationPage = ({ notifications, onMarkAsRead, onMarkAllAsRead, onConf
             <div className="space-y-3">
                 {notifications.map(notification => {
                     // Determine if this notification has action buttons
-                    const hasActionButtons = (notification.type === 'purchase_request' || notification.type === 'rate_prompt') && !notification.read;
+                    const hasActionButtons = (notification.type === 'purchase_request' && !notification.read) || notification.type === 'rate_prompt';
 
                     return (
                         <div
                             key={notification.id}
-                            onClick={() => !hasActionButtons && !notification.read && onMarkAsRead(notification.id)}
-                            className={`bg-white/80 backdrop-blur-sm p-4 rounded-2xl hover:shadow-md transition border border-pine-50 hover:border-pine-100 ${!notification.read ? 'border-l-4 border-l-pine-800 bg-white' : 'opacity-75'} ${!hasActionButtons && !notification.read ? 'cursor-pointer' : ''}`}
+                            onClick={() => {
+                                if (notification.type === 'rate_prompt') {
+                                    handleRatingClick({ stopPropagation: () => {} }, notification);
+                                } else if (!hasActionButtons && !notification.read) {
+                                    onMarkAsRead(notification.id);
+                                }
+                            }}
+                            className={`bg-white/80 backdrop-blur-sm p-4 rounded-2xl hover:shadow-md transition border border-pine-50 hover:border-pine-100 ${!notification.read ? 'border-l-4 border-l-pine-800 bg-white' : 'opacity-75'} ${(notification.type === 'rate_prompt' || (!hasActionButtons && !notification.read)) ? 'cursor-pointer' : ''}`}
                         >
                             <div className="flex items-start gap-3">
                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${getNotificationBgColor(notification.type)}`}>
@@ -159,7 +177,7 @@ const NotificationPage = ({ notifications, onMarkAsRead, onMarkAllAsRead, onConf
                                     )}
 
                                     {/* Rating prompt button */}
-                                    {notification.type === 'rate_prompt' && !notification.read && (
+                                    {notification.type === 'rate_prompt' && (
                                         <div className="flex gap-2 mt-3">
                                             <button
                                                 onClick={(e) => handleRatingClick(e, notification)}
@@ -205,6 +223,45 @@ const NotificationPage = ({ notifications, onMarkAsRead, onMarkAllAsRead, onConf
                     </div>
                 )}
             </div>
+
+            {/* SDG Carbon Reduction Modal */}
+            {sdgModalData && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl animate-fade-in-up">
+                        <div className="bg-gradient-to-r from-green-400 to-emerald-600 p-6 flex flex-col items-center justify-center text-white">
+                            <TreePine size={64} className="mb-4 animate-bounce" />
+                            <h3 className="text-2xl font-bold mb-1">{t('notifications.carbon_modal_title')}</h3>
+                            <p className="text-sm opacity-90 text-center">{t('notifications.carbon_modal_subtitle')}</p>
+                        </div>
+                        <div className="p-6 text-center space-y-4">
+                            <p className="text-gray-600">{t('notifications.carbon_modal_desc')}</p>
+                            <div className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-br from-green-600 to-emerald-800">
+                                {sdgModalData.carbon} <span className="text-lg font-medium">kg CO2e</span>
+                            </div>
+                            <div className="bg-green-50 p-3 rounded-xl inline-flex items-center justify-center gap-2">
+                                <span className="text-xl">🌳</span>
+                                <span className="text-green-800 font-medium">
+                                    {t('notifications.carbon_modal_trees_p1')} <b className="text-2xl">{sdgModalData.trees}</b> {t('notifications.carbon_modal_trees_p2')}
+                                </span>
+                            </div>
+                        </div>
+                        <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-center">
+                            <button
+                                onClick={() => {
+                                    if (sdgModalData.onContinue) {
+                                        sdgModalData.onContinue();
+                                    } else {
+                                        setSdgModalData(null);
+                                    }
+                                }}
+                                className="w-full max-w-[200px] py-3 bg-gradient-to-r from-pine-600 to-pine-500 text-white rounded-full font-bold shadow-md shadow-pine-200 hover:shadow-lg hover:-translate-y-0.5 transition-all outline-none"
+                            >
+                                {sdgModalData.onContinue ? t('notifications.carbon_modal_btn_continue', { defaultValue: '前往評價' }) : t('notifications.carbon_modal_btn')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

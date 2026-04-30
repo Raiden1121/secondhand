@@ -4,13 +4,15 @@ import {
     confirmPurchase,
     cancelTransaction,
     getTransaction,
-    getProductTransactionStatus
+    getProductTransactionStatus,
+    getCarbonStats
 } from '../controllers/transactionController.js';
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // Specific routes MUST come before parameterized routes
+router.get('/carbon-stats', getCarbonStats);
 router.get('/product/:productId/status', authenticateToken, getProductTransactionStatus);
 router.post('/', authenticateToken, createPurchaseRequest);
 router.patch('/:transactionId/confirm', authenticateToken, confirmPurchase);
