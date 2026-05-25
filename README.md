@@ -99,8 +99,8 @@ VITE_API_URL=http://localhost:3000
 
 ```env
 PORT=3000
-DB_PORT=5433
-DATABASE_URL=postgresql://user:password@localhost:5433/secondhand?schema=public
+DB_PORT=5434
+DATABASE_URL=postgresql://user:password@localhost:5434/secondhand?schema=public
 JWT_SECRET=replace_me
 NODE_ENV=development
 FRONTEND_URL=http://localhost:5173
@@ -139,7 +139,7 @@ docker compose up -d
 
 說明：
 
-- 本機連接埠使用 `5433`
+- 本機連接埠使用 `5434`
 - 容器內 PostgreSQL 連接埠是 `5432`
 - 若出現 `Cannot connect to the Docker daemon`，表示 Docker Desktop 尚未啟動
 
