@@ -311,3 +311,19 @@ Prisma schema 目前包含以下模型：
 - 將結果回寫到 `Product.carbonSaved`
 
 若你要重新整理碳排資料，需先安裝 `SDGs/requirements.txt` 內的套件，並另外準備 Playwright 瀏覽器環境。
+
+啟動專案
+cd /Users/ray/Desktop/secondhand/backend
+docker compose up -d
+npx prisma db push
+npm run dev
+
+再開另一個 terminal：
+cd /Users/ray/Desktop/secondhand
+npm run dev
+
+暴露前端 5173
+ngrok http 5173
+
+sopepi6979@gcervera.com
+1234

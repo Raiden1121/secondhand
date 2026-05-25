@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       port: PORT,
+      allowedHosts: ['.ngrok-free.dev', '.ngrok-free.app'],
       proxy: {
         '/api': {
           target: API_URL,
@@ -29,4 +30,3 @@ export default defineConfig(({ mode }) => {
     },
   }
 })
-
